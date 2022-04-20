@@ -11,107 +11,6 @@ from scipy.io import wavfile
 from matplotlib import pyplot as plt
 
 
-matplotlib.use("Agg")
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-        self.min = 100
-        self.max = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-        if val < self.min:
-            self.min = val
-        if val > self.max:
-            self.max = val
-
-
-def to_device(data, device):
-    if len(data) == 12:
-        (
-            ids,
-            raw_texts,
-            speakers,
-            texts,
-            src_lens,
-            max_src_len,
-            mels,
-            mel_lens,
-            max_mel_len,
-            pitches,
-            energies,
-            durations,
-        ) = data
-
-        speakers = torch.from_numpy(speakers).long().to(device)
-        texts = torch.from_numpy(texts).long().to(device)
-        src_lens = torch.from_numpy(src_lens).to(device)
-        mels = torch.from_numpy(mels).float().to(device)
-        mel_lens = torch.from_numpy(mel_lens).to(device)
-        pitches = torch.from_numpy(pitches).float().to(device)
-        energies = torch.from_numpy(energies).to(device)
-        durations = torch.from_numpy(durations).long().to(device)
-
-        return (
-            ids,
-            raw_texts,
-            speakers,
-            texts,
-            src_lens,
-            max_src_len,
-            mels,
-            mel_lens,
-            max_mel_len,
-            pitches,
-            energies,
-            durations,
-        )
-
-    if len(data) == 6:
-        (ids, raw_texts, speakers, texts, src_lens, max_src_len) = data
-
-        speakers = torch.from_numpy(speakers).long().to(device)
-        texts = torch.from_numpy(texts).long().to(device)
-        src_lens = torch.from_numpy(src_lens).to(device)
-
-        return (ids, raw_texts, speakers, texts, src_lens, max_src_len)
-
-
-def log(
-    logger, step=None, losses=None, fig=None, audio=None, sampling_rate=22050, tag=""
-):
-    if losses is not None:
-        logger.add_scalar("Loss/total_loss", losses[0], step)
-        logger.add_scalar("Loss/mel_loss", losses[1], step)
-        logger.add_scalar("Loss/mel_postnet_loss", losses[2], step)
-        logger.add_scalar("Loss/pitch_loss", losses[3], step)
-        logger.add_scalar("Loss/energy_loss", losses[4], step)
-        logger.add_scalar("Loss/duration_loss", losses[5], step)
-
-    if fig is not None:
-        logger.add_figure(tag, fig)
-
-    if audio is not None:
-        logger.add_audio(
-            tag,
-            audio / max(abs(audio)),
-            sample_rate=sampling_rate,
-        )
-
 
 def get_mask_from_lengths(lengths, max_len=None):
     batch_size = lengths.shape[0]
@@ -357,22 +256,16 @@ def pad(input_ele, mel_max_length=None):
 
 def get_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--accelerator", type=str, default="gpu")
+    parser.add_argument("--devices", type=int, default=1)
+    parser.add_argument("--num_workers", type=int, default=4)
+
     parser.add_argument("--restore_step", type=int, default=0)
     parser.add_argument("-p",
                         "--preprocess_config",
-                        default="config/LJSpeech/preprocess.yaml",
+                        default="config/preprocess.yaml",
                         type=str,
                         help="path to preprocess.yaml",)
-    parser.add_argument("-m", 
-                        "--model_config", 
-                        default="config/LJSpeech/model.yaml", 
-                        type=str, 
-                        help="path to model.yaml")
-    parser.add_argument("-t",
-                        "--train_config", 
-                        default="config/LJSpeech/train.yaml", 
-                        type=str, 
-                        help="path to train.yaml")
     parser.add_argument('--weight-decay',
                         type=float,
                         default=1e-5,
@@ -438,10 +331,6 @@ def get_args():
                         action='store_true',
                         help='If simple activation will be used')
 
-    parser.add_argument('--distill',
-                        default=False,
-                        action='store_true',
-                        help='Enable knowledge distillation leaarning')
     parser.add_argument("--checkpoint",
                         default=None,
                         type=str,
@@ -467,5 +356,7 @@ def get_args():
 
     if args.seed == 0:
         args.seed = random.randint(0, 1e3)
+
+    args.num_workers *= args.devices
 
     return args

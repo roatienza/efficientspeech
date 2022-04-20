@@ -1,5 +1,5 @@
 import json
-#import math
+import torch
 import os
 
 import numpy as np
@@ -19,16 +19,18 @@ class LJSpeechDataModule(LightningDataModule):
         self.sort = True
 
     def collate_fn(self, batch):
-        len_arr = np.array([d["phoneme"].shape[0] for d in batch])
+        x, y = zip(*batch)
+        len_arr = np.array([d["phoneme"].shape[0] for d in x])
         idx_arr = np.argsort(-len_arr)
         idxs = idx_arr.reshape((-1, self.batch_size)).tolist()
+        idxs = idxs[0]
 
-        phonemes = [batch[idx]["phoneme"] for idx in idxs]
-        texts = [batch[idx]["text"] for idx in idxs]
-        mels = [batch[idx]["mel"] for idx in idxs]
-        pitches = [batch[idx]["pitch"] for idx in idxs]
-        energies = [batch[idx]["energy"] for idx in idxs]
-        durations = [batch[idx]["duration"] for idx in idxs]
+        phonemes = [x[idx]["phoneme"] for idx in idxs]
+        texts = [x[idx]["text"] for idx in idxs]
+        mels = [y[idx]["mel"] for idx in idxs]
+        pitches = [x[idx]["pitch"] for idx in idxs]
+        energies = [x[idx]["energy"] for idx in idxs]
+        durations = [x[idx]["duration"] for idx in idxs]
 
         phoneme_lens = np.array([phoneme.shape[0] for phoneme in phonemes])
         mel_lens = np.array([mel.shape[0] for mel in mels])
