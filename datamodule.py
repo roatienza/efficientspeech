@@ -1,7 +1,6 @@
 import json
 import torch
 import os
-
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
@@ -21,9 +20,7 @@ class LJSpeechDataModule(LightningDataModule):
     def collate_fn(self, batch):
         x, y = zip(*batch)
         len_arr = np.array([d["phoneme"].shape[0] for d in x])
-        idx_arr = np.argsort(-len_arr)
-        idxs = idx_arr.reshape((-1, self.batch_size)).tolist()
-        idxs = idxs[0]
+        idxs = np.argsort(-len_arr).tolist()
 
         phonemes = [x[idx]["phoneme"] for idx in idxs]
         texts = [x[idx]["text"] for idx in idxs]
@@ -84,8 +81,8 @@ class LJSpeechDataModule(LightningDataModule):
         self.test_dataloader = DataLoader(self.test_dataset,
                                           shuffle=False,
                                           batch_size=self.batch_size,
-                                           collate_fn=self.collate_fn,
-                                           num_workers=self.num_workers)
+                                          collate_fn=self.collate_fn,
+                                          num_workers=self.num_workers)
     
     def val_dataloader(self):
         return self.test_dataloader()
