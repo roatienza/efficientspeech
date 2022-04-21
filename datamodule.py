@@ -52,9 +52,10 @@ class LJSpeechDataModule(LightningDataModule):
              "text": texts,
              "pitch": pitches,
              "energy": energies,
-             "duration": durations}
+             "duration": durations,
+             "mel_len": mel_lens}
     
-        y = {"mel": mels, "mel_len": mel_lens,}
+        y = {"mel": mels}
 
         return x, y
 
@@ -63,8 +64,12 @@ class LJSpeechDataModule(LightningDataModule):
         self.train_dataset = LJSpeechDataset("train.txt", 
                                              self.preprocess_config)
 
+        print("Train dataset size: {}".format(len(self.train_dataset)))
+
         self.test_dataset = LJSpeechDataset("val.txt",
                                             self.preprocess_config)
+
+        print("Test dataset size: {}".format(len(self.test_dataset)))
 
     def setup(self, stage=None):
         self.prepare_data()
@@ -77,12 +82,13 @@ class LJSpeechDataModule(LightningDataModule):
                                            num_workers=self.num_workers)
         return self.train_dataloader
 
-    def test_data_loader(self):
+    def test_dataloader(self):
         self.test_dataloader = DataLoader(self.test_dataset,
-                                          shuffle=False,
+                                          shuffle=True,
                                           batch_size=self.batch_size,
                                           collate_fn=self.collate_fn,
                                           num_workers=self.num_workers)
+        return self.test_dataloader
     
     def val_dataloader(self):
         return self.test_dataloader()

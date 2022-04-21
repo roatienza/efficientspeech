@@ -326,10 +326,6 @@ def get_args():
                         type=float,
                         default=2.,
                         help='Energy Loss weight')
-    parser.add_argument('--no-activation',
-                        default=False,
-                        action='store_true',
-                        help='If simple activation will be used')
 
     parser.add_argument("--checkpoint",
                         default=None,
@@ -352,7 +348,7 @@ def get_args():
                         default=1.0,
                         help="control the speed of the whole utterance, larger value for slower speaking rate",)
     args = parser.parse_args()
-    args.activation = not args.no_activation
+    #args.activation = not args.no_activation
 
     if args.seed == 0:
         args.seed = random.randint(0, 1e3)

@@ -1,7 +1,12 @@
 
 import yaml
+import json
+import os
 from datamodule import LJSpeechDataModule
 from utils.tools import get_args
+from model import EfficientFSModule
+
+from pytorch_lightning import Trainer
 
 if __name__ == "__main__":
     args = get_args()
@@ -11,15 +16,23 @@ if __name__ == "__main__":
                                     num_workers=args.num_workers)
 
     datamodule.setup()
+
     train_dataloader = datamodule.train_dataloader()
 
-    for i, (x, y) in enumerate(train_dataloader):
-        print(x["text"])
-        print(x["phoneme"])
-        print(x["pitch"])
-        print(x["energy"])
-        print(x["duration"])
-        print(y["mel"])
-        print(y["mel_len"])
-        print("\n")
-        break
+    #for i, (x, y) in enumerate(train_dataloader):
+    #    print(x["phoneme"].shape)
+
+    with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
+        stats = json.load(f)
+        pitch_stats = stats["pitch"][:2]
+        energy_stats = stats["energy"][:2]
+        print("Pitch min/max", pitch_stats)
+        print("Energy min/max", energy_stats)
+
+    phoneme2mel = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
+                                    depth=args.depth, reduction=args.reduction, head=args.head,
+                                    embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                    expansion=args.expansion)
+
+    trainer = Trainer(accelerator=args.accelerator, devices=args.devices, max_epochs=1)
+
