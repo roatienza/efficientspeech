@@ -8,6 +8,15 @@ from model import EfficientFSModule
 
 from pytorch_lightning import Trainer
 
+def print_args(args):
+    opt_log =  '--------------- Options ---------------\n'
+    opt = vars(args)
+    for k, v in opt.items():
+        opt_log += f'{str(k)}: {str(v)}\n'
+    opt_log += '---------------------------------------\n'
+    print(opt_log)
+    return opt_log
+
 if __name__ == "__main__":
     args = get_args()
     preprocess_config = yaml.load(open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
@@ -31,10 +40,11 @@ if __name__ == "__main__":
 
     phoneme2mel = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr, 
                                     warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                    depth=args.depth, reduction=args.reduction, head=args.head,
+                                    depth=args.depth, n_blocks=args.n_blocks, reduction=args.reduction, head=args.head,
                                     embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                     expansion=args.expansion)
 
+    
     trainer = Trainer(accelerator=args.accelerator, devices=args.devices, 
                      precision=args.precision,
                      strategy="ddp", max_epochs=args.max_epochs,)

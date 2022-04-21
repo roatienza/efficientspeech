@@ -61,7 +61,8 @@ class EfficientSelfAttention(nn.Module):
                 mask = reduce(mask, 'b (n p) -> b n', 'max', p=pool)
             attn_mask = mask.unsqueeze(1).expand(-1, attn.shape[-1], -1)
             attn_mask = attn_mask.repeat(head, 1, 1) 
-            attn = attn.masked_fill(attn_mask, torch.iinfo(int).min)
+            #attn = attn.masked_fill(attn_mask, torch.iinfo(int).min)
+            attn = attn.masked_fill(attn_mask, -2**15)
 
         attn = attn.softmax(dim = -1)
 

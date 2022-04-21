@@ -272,7 +272,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--accelerator", type=str, default="gpu")
     parser.add_argument("--devices", type=int, default=1)
-    parser.add_argument("--precision", default=32, type=int)
+    parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_epochs", type=int, default=2000)
     parser.add_argument("--warmup_epochs", type=int, default=25)
@@ -300,13 +300,17 @@ def get_args():
                         type=int,
                         default=2,
                         help='Encoder depth')
+    parser.add_argument('--n-blocks',
+                        type=int,
+                        default=3,
+                        help='Decoder blocks')
     parser.add_argument('--reduction',
                         type=int,
                         default=1,
                         help='Embed dim reduction factor')
     parser.add_argument('--head',
                         type=int,
-                        default=1,
+                        default=2,
                         help='Number of head at layer 1')
     parser.add_argument('--embed-dim',
                         type=int,
@@ -314,12 +318,16 @@ def get_args():
                         help='Embedding dim')
     parser.add_argument('--kernel-size',
                         type=int,
-                        default=5,
+                        default=3,
                         help='Conv1d kernel size (Encoder/Decoder)')
     parser.add_argument('--expansion',
                         type=int,
-                        default=1,
+                        default=2,
                         help='MixFFN expansion')
+    parser.add_argument('--out-folder',
+                        default="outputs",
+                        type=str,
+                        help="Output folder")
     parser.add_argument('--seed',
                         type=int,
                         default=0,

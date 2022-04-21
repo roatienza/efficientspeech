@@ -8,8 +8,7 @@ import torch.nn as nn
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
 from pytorch_lightning import LightningModule, Callback
 from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
-from pytorch_lightning.callbacks import ModelCheckpoint
+#from pytorch_lightning.callbacks import ModelCheckpoint
 from utils.tools import synth_test_samples
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
@@ -29,7 +28,7 @@ def get_hifigan():
 class EfficientFSModule(LightningModule):
     def __init__(self, 
                 preprocess_config, lr=1e-3, warmup_epochs=10, max_epochs=4000,
-                depth=2, reduction=1, head=2, 
+                depth=2, n_blocks=2, reduction=1, head=2, 
                 embed_dim=256, kernel_size=5, expansion=2,
                 wav_path="outputs"):
         super(EfficientFSModule, self).__init__()
@@ -54,8 +53,10 @@ class EfficientFSModule(LightningModule):
                                          kernel_size=kernel_size,
                                          expansion=expansion)
 
-        mel_decoder = MelDecoder(dims=phoneme_encoder.dims,
-                                 kernel_size=kernel_size)
+        mel_decoder = MelDecoder(dim=embed_dim//reduction,
+                                 kernel_size=kernel_size,
+                                 depth=depth,
+                                 n_blocks=n_blocks)
 
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
@@ -156,18 +157,9 @@ class EfficientFSModule(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         return self.test_step(batch, batch_idx)
-        #x, y = batch
-        #y_hat = self.forward(x, train=True)
-        #mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(
-        #    y_hat, y, x)
-        #loss = (10. * mel_loss) + (2. * pitch_loss) + \
-        #    (2. * energy_loss) + duration_loss
-        #return {"val_loss": loss, }
 
     def validation_epoch_end(self, outputs):
         pass
-        #avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        #self.log("val", avg_loss, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.lr)

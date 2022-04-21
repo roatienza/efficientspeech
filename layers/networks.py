@@ -11,15 +11,15 @@ import torch
 class Encoder(nn.Module):
     """ Encoder """
 
-    def __init__(self, depth=2, embed_dim=256, kernel_size=5, expansion=2, reduction=4, head=2):
+    def __init__(self, depth=2, embed_dim=128, kernel_size=5, expansion=2, reduction=4, head=2):
         super().__init__()
 
         small_embed_dim = embed_dim // reduction
-        dim_ins = [small_embed_dim*(i+1) for i in range(depth-1)]
+        dim_ins = [small_embed_dim*(2**i) for i in range(depth-1)]
         dim_ins.insert(0, embed_dim)
         self.dim_outs = [small_embed_dim*2**i for i in range(depth)]
         heads = [head*(i+1) for i in range(depth)]
-        kernels = [kernel_size-(2 if i>0 else 0) for i in range(depth)]
+        kernels = [kernel_size-(2 if i > 0 else 0) for i in range(depth)]
         paddings = [k//2 for k in kernels]
         strides = [2 for _ in range(depth-1)]
         strides.insert(0, 1)
@@ -78,13 +78,10 @@ class Encoder(nn.Module):
 class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Decoder """
 
-    def __init__(self, dims, pitch_stats=None, energy_stats=None, n_mel_channels=80, dropout=0.1, duration=False):
+    def __init__(self, dim, pitch_stats=None, energy_stats=None, n_mel_channels=80, dropout=0.1, duration=False):
         super().__init__()
-
-        assert(len(dims)>0)
         
         self.n_mel_channels = n_mel_channels
-        dim = dims[0]
 
         self.conv1 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm1 = nn.LayerNorm(dim)
@@ -221,64 +218,47 @@ class FeatureUpsampler(nn.Module):
 
 
 
-class MelPredictor(nn.Module):
+class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
-    def __init__(self, dims, n_mel_channels=80, dropout=0.1, depth=3, kernel_size=5):
+    def __init__(self, dim, kernel_size=5, n_mel_channels=80, depth=2, n_blocks=2):
         super().__init__()
-
-        assert(len(dims)>0)
 
         # arg parameters
         self.n_mel_channels = n_mel_channels
-        dim1 = dims[0]
-        dim2 = max(2*dim1, 256)
-        dim4 = 4*dim1
+        dim2 = max(2*dim, 256)
+        dim4 = 4*dim
         padding = kernel_size // 2
 
         self.fuse = nn.Sequential(nn.Linear(dim4, dim2),
                                   nn.Tanh(), 
                                   nn.LayerNorm(dim2),)
 
-        self.convs1 = nn.ModuleList([])
-        for _ in range(depth):
-            self.convs1.append(
-                    nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
-                                   nn.Tanh(),
-                                   nn.LayerNorm(dim2),]))
-
-        self.convs2 = nn.ModuleList([])
-        for _ in range(depth):
-            self.convs2.append(
-                    nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
-                                   nn.Tanh(),
-                                   nn.LayerNorm(dim2),]))
-
-        self.convs3 = nn.ModuleList([])
-        for _ in range(depth):
-            self.convs3.append(
-                    nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
-                                nn.Tanh(),
-                                nn.LayerNorm(dim2),]))
+        self.blocks = nn.ModuleList([])
+        for _ in range(n_blocks):
+            conv = nn.ModuleList([])
+            for _ in range(depth):
+                conv.append(nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
+                            nn.Tanh(),
+                            nn.LayerNorm(dim2),]))
+            self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim2)]))
     
-        self.dim2 = dim2
         self.mel_linear = nn.Linear(dim2, self.n_mel_channels)
-        self.norm = nn.LayerNorm(dim2)
+        #self.norm = nn.LayerNorm(dim2)
 
 
     def forward(self, features, mask=None):
 
         skip = self.fuse(features)
 
-        blocks = [self.convs1, self.convs2, self.convs3]
-        for convs in blocks:
+        for convs, skip_norm in self.blocks:
             mel = rearrange(skip, 'b n c -> b c n') 
             for conv, act, norm in convs:
                 x = act(conv(mel))
                 x = norm(rearrange(x, 'b c n -> b n c')) # + rearrange(mel, 'b c n -> b n c'))
                 mel = rearrange(x, 'b n c -> b c n')
 
-            skip = self.norm(x + skip)
+            skip = skip_norm(x + skip)
 
         # resize channel to mel length (eg 80)
         mel = self.mel_linear(skip)
@@ -295,7 +275,7 @@ class PhonemeEncoder(nn.Module):
                  depth=2, 
                  reduction=4, 
                  head=2, 
-                 embed_dim=256, 
+                 embed_dim=128, 
                  kernel_size=5, 
                  expansion=2):
         super().__init__()
@@ -306,13 +286,14 @@ class PhonemeEncoder(nn.Module):
                                embed_dim=embed_dim, 
                                kernel_size=kernel_size, 
                                expansion=expansion)
-        dims = self.encoder.get_feature_dims()
-        self.fuse = Fuse(dims, kernel_size=kernel_size)
+        
+        dim = embed_dim // reduction
+        self.fuse = Fuse(self.encoder.get_feature_dims(), kernel_size=kernel_size)
         self.feature_upsampler = FeatureUpsampler()
-        self.pitch_decoder = AcousticDecoder(dims, pitch_stats=pitch_stats)
-        self.energy_decoder = AcousticDecoder(dims, energy_stats=energy_stats)
-        self.duration_decoder = AcousticDecoder(dims, duration=True)
-        self.dims = dims
+        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats)
+        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats)
+        self.duration_decoder = AcousticDecoder(dim, duration=True)
+        
 
     def forward(self, x, train=True):
         phoneme = x["phoneme"]
@@ -363,32 +344,6 @@ class PhonemeEncoder(nn.Module):
 
         return y
 
-
-        
-class MelDecoder(nn.Module):
-    """ Mel Generator """
-
-    def __init__(self,
-                 dims,
-                 kernel_size=5):
-        super().__init__()
-        self.mel_predictor = MelPredictor(dims,
-                                          kernel_size=kernel_size)
-
-    def forward(self,
-                features, 
-                mask): 
-                #mel_len=None,
-                #max_mel_len=None):
-
-        return self.mel_predictor(features, mask=mask)
-        #mel_mask = get_mask_from_lengths(mel_len, max_mel_len) if mel_len is not None else None
-        #y = {"mel": mel_pred}
-        #if self.training:
-        #    y["mel_mask"] = mel_mask
-        
-        #return y
-
         
 class Phoneme2Mel(nn.Module):
     """ Mel Former """
@@ -402,15 +357,8 @@ class Phoneme2Mel(nn.Module):
         self.decoder = decoder
 
     def forward(self, x, train=True):
-
-        #mel_len = x["mel_len"] if self.training else None
-        #max_mel_len = torch.max(mel_len).item() if mel_len is not None else None
-    
         pred = self.encoder(x, train=train)
-        mel_pred = self.decoder(pred["features"], pred["mask"]) #, mel_len=mel_len, max_mel_len=max_mel_len)
+        mel_pred = self.decoder(pred["features"], pred["mask"]) 
         pred["mel"] = mel_pred
-
-        #if self.training:
-        #    pred["mel_mask"] = mel_pred["mel_mask"]
         
         return pred
