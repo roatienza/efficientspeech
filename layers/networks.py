@@ -226,7 +226,7 @@ class MelDecoder(nn.Module):
 
         # arg parameters
         self.n_mel_channels = n_mel_channels
-        dim2 = max(2*dim, 256)
+        dim2 = 2*dim #max(2*dim, 256)
         dim4 = 4*dim
         padding = kernel_size // 2
 
