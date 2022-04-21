@@ -47,7 +47,8 @@ if __name__ == "__main__":
     
     trainer = Trainer(accelerator=args.accelerator, devices=args.devices, 
                      precision=args.precision,
-                     strategy="ddp", max_epochs=args.max_epochs,)
+                     strategy="ddp", 
+                     max_epochs=args.max_epochs,)
 
     trainer.fit(phoneme2mel, datamodule=datamodule)
     #trainer.test(phoneme2mel, datamodule=datamodule)
