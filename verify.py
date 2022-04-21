@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     datamodule.setup()
 
-    train_dataloader = datamodule.train_dataloader()
+    #train_dataloader = datamodule.train_dataloader()
 
     #for i, (x, y) in enumerate(train_dataloader):
     #    print(x["phoneme"].shape)
@@ -34,5 +34,6 @@ if __name__ == "__main__":
                                     embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                     expansion=args.expansion)
 
-    trainer = Trainer(accelerator=args.accelerator, devices=args.devices, max_epochs=1)
+    trainer = Trainer(accelerator=args.accelerator, devices=args.devices, max_epochs=args.max_epochs,)
 
+    trainer.fit(phoneme2mel, datamodule=datamodule)

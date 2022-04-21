@@ -17,7 +17,7 @@ def get_mask_from_lengths(lengths, max_len=None):
     if max_len is None:
         max_len = torch.max(lengths).item()
 
-    ids = torch.arange(0, max_len).unsqueeze(0).expand(batch_size, -1).to(device)
+    ids = torch.arange(0, max_len).unsqueeze(0).expand(batch_size, -1) #.to(device)
     mask = ids >= lengths.unsqueeze(1).expand(-1, max_len)
 
     return mask
@@ -259,10 +259,9 @@ def get_args():
     parser.add_argument("--accelerator", type=str, default="gpu")
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--max_epochs", type=int, default=80)
 
-    parser.add_argument("--restore_step", type=int, default=0)
-    parser.add_argument("-p",
-                        "--preprocess_config",
+    parser.add_argument("--preprocess_config",
                         default="config/preprocess.yaml",
                         type=str,
                         help="path to preprocess.yaml",)
@@ -310,10 +309,7 @@ def get_args():
                         default=0,
                         metavar='N',
                         help='Random seed')
-    parser.add_argument('--count',
-                        type=int,
-                        default=16,
-                        help='Number of speech samples from test split to predict')
+
     parser.add_argument('--mel-loss-weight',
                         type=float,
                         default=10.,
@@ -348,7 +344,6 @@ def get_args():
                         default=1.0,
                         help="control the speed of the whole utterance, larger value for slower speaking rate",)
     args = parser.parse_args()
-    #args.activation = not args.no_activation
 
     if args.seed == 0:
         args.seed = random.randint(0, 1e3)

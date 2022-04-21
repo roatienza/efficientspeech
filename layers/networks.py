@@ -318,11 +318,12 @@ class PhonemeEncoder(nn.Module):
         phoneme = x["phoneme"]
         phoneme_len = x["phoneme_len"]
         max_phoneme_len = torch.max(phoneme_len).item()
-        pitch_target = x["pitch"]
-        energy_target = x["energy"]
-        duration_target = x["duration"]
-        mel_len = x["mel_len"]
-        max_mel_len = torch.max(mel_len).item()
+
+        pitch_target = x["pitch"] if self.training else None
+        energy_target = x["energy"] if self.training else None
+        duration_target = x["duration"] if self.training else None
+        mel_len = x["mel_len"] if self.training else None
+        max_mel_len = torch.max(mel_len).item() if mel_len is not None else None
 
         phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len) 
         features, mask = self.encoder(phoneme, mask=phoneme_mask)
@@ -331,14 +332,14 @@ class PhonemeEncoder(nn.Module):
         
         pitch_pred = self.pitch_decoder(fused_features)
         pitch_features = self.pitch_decoder.get_embedding(pitch_pred, pitch_target, mask)
-        if pitch_target is None:
+        if self.training:
             pitch_features = pitch_features.squeeze()
         if mask is not None:
             pitch_features = pitch_features.masked_fill(mask, 0)
 
         energy_pred = self.energy_decoder(fused_features)
         energy_features = self.energy_decoder.get_embedding(energy_pred, energy_target, mask)
-        if energy_target is None:
+        if self.training:
             energy_features = energy_features.squeeze()
         if mask is not None:
             energy_features = energy_features.masked_fill(mask, 0)
@@ -349,7 +350,7 @@ class PhonemeEncoder(nn.Module):
        
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
         
-        if duration_target is None:
+        if self.training:
             duration_target = torch.round(duration_pred).squeeze()
         duration_target = duration_target.masked_fill(phoneme_mask, 0)
 
@@ -411,9 +412,10 @@ class Phoneme2Mel(nn.Module):
         self.decoder = decoder
 
     def forward(self, x):
-        mel_len = x["mel_len"]
-        max_mel_len = torch.max(mel_len).item()
 
+        mel_len = x["mel_len"] if self.training else None
+        max_mel_len = torch.max(mel_len).item() if mel_len is not None else None
+    
         pred = self.encoder(x)
         mel_pred = self.decoder(pred["features"], pred["mask"], mel_len=mel_len, max_mel_len=max_mel_len)
         pred["mel"] = mel_pred["pred"]
