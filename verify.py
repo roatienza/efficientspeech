@@ -36,4 +36,5 @@ if __name__ == "__main__":
 
     trainer = Trainer(accelerator=args.accelerator, devices=args.devices, max_epochs=args.max_epochs,)
 
+    #trainer.test(phoneme2mel, datamodule=datamodule)
     trainer.fit(phoneme2mel, datamodule=datamodule)

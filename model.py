@@ -57,22 +57,23 @@ class EfficientFSModule(LightningModule):
 
         #self.hifigan = get_hifigan()
 
-    def forward(self, x):
-        return self.phoneme2mel(x)
+    def forward(self, x, train=True):
+        return self.phoneme2mel(x, train=train)
 
-    def loss(self, y_hat, y):
+    def loss(self, y_hat, y, x):
         
         pitch_pred = y_hat["pitch"]
         energy_pred = y_hat["energy"]
         duration_pred = y_hat["duration"]
-        phoneme_mask = y["phoneme_mask"]
         mel_pred = y_hat["mel"]
-        mel_mask = y["mel_mask"]
 
+        phoneme_mask = x["phoneme_mask"]
+        mel_mask = x["mel_mask"]
+
+        pitch = x["pitch"]
+        energy = x["energy"]
+        duration = x["duration"]
         mel = y["mel"]
-        pitch = y["pitch"]
-        energy = y["energy"]
-        duration = y["duration"]
 
         mel_mask = ~mel_mask
         mel_mask = mel_mask.unsqueeze(-1)
@@ -103,20 +104,19 @@ class EfficientFSModule(LightningModule):
         duration_loss = nn.MSELoss()(duration_pred, duration)
 
         return mel_loss, pitch_loss, energy_loss, duration_loss
-        #loss = (10. * mel_loss) + (2. * pitch_loss) + (2. * energy_loss) + duration_loss
-        #return loss
+ 
 
-    # this is called during fit()
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y)
+        y_hat = self.forward(x, train=True)
+        mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y, x)
         loss = (10. * mel_loss) + (2. * pitch_loss) + \
             (2. * energy_loss) + duration_loss
+        
         return {"loss": loss, "mel_loss": mel_loss, "pitch_loss": pitch_loss,
                 "energy_loss": energy_loss, "duration_loss": duration_loss}
 
-    # calls to self.log() are recorded in wandb
+
     def training_epoch_end(self, outputs):
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         avg_mel_loss = torch.stack([x["mel_loss"] for x in outputs]).mean()
@@ -125,41 +125,38 @@ class EfficientFSModule(LightningModule):
             [x["energy_loss"] for x in outputs]).mean()
         avg_duration_loss = torch.stack(
             [x["duration_loss"] for x in outputs]).mean()
-        self.log("train_loss", avg_loss, on_epoch=True)
-        self.log("train_mel_loss", avg_mel_loss, on_epoch=True)
-        self.log("train_pitch_loss", avg_pitch_loss, on_epoch=True)
-        self.log("train_energy_loss", avg_energy_loss, on_epoch=True)
-        self.log("train_duration_loss", avg_duration_loss, on_epoch=True)
+        self.log("train", avg_loss, on_epoch=True, prog_bar=True)
+        self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True)
+        self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True)
+        self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True)
+        self.log("duration", avg_duration_loss, on_epoch=True, prog_bar=True)
 
-    # this is called at the end of an epoch
+
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y)
+        y_hat = self.forward(x, train=False)
+        
+
+    def test_epoch_end(self, outputs):
+        pass
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.forward(x, train=True)
+        mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(
+            y_hat, y, x)
         loss = (10. * mel_loss) + (2. * pitch_loss) + \
             (2. * energy_loss) + duration_loss
-        return {"test_loss": loss, "test_mel_loss": mel_loss, "test_pitch_loss": pitch_loss,
-                "test_energy_loss": energy_loss, "test_duration_loss": duration_loss}
+        return {"val_loss": loss, }
 
-
-    # this is called at the end of all epochs
-    def test_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["test_loss"] for x in outputs]).mean()
-        avg_mel_loss = torch.stack([x["test_mel_loss"] for x in outputs]).mean()
-        avg_pitch_loss = torch.stack([x["test_pitch_loss"] for x in outputs]).mean()
-        avg_energy_loss = torch.stack(x["test_energy_loss"] for x in outputs).mean()
-        avg_duration_loss = torch.stack(
-            [x["test_duration_loss"] for x in outputs]).mean()
-        self.log("test_loss", avg_loss, on_epoch=True)
-        self.log("test_mel_loss", avg_mel_loss, on_epoch=True)
-        self.log("test_pitch_loss", avg_pitch_loss, on_epoch=True)
-        self.log("test_energy_loss", avg_energy_loss, on_epoch=True)
-        self.log("test_duration_loss", avg_duration_loss, on_epoch=True)
-
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        self.log("val", avg_loss, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.lr)
-        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=1, T_mult=1, eta_min=1e-6, verbose=True)
+        scheduler = CosineAnnealingWarmRestarts(
+            optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
         return [optimizer], [scheduler]
 
 

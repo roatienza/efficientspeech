@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from text import text_to_sequence
 from utils.tools import pad_1D, pad_2D
 from pytorch_lightning import LightningDataModule
+from utils.tools import get_mask_from_lengths
 
 class LJSpeechDataModule(LightningDataModule):
     def __init__(self, preprocess_config, batch_size=64, num_workers=4):
@@ -40,22 +41,29 @@ class LJSpeechDataModule(LightningDataModule):
 
         phonemes = torch.from_numpy(phonemes).long()
         phoneme_lens = torch.from_numpy(phoneme_lens).long()
+        max_phoneme_len = torch.max(phoneme_lens).item()
+        phoneme_mask = get_mask_from_lengths(phoneme_lens, max_phoneme_len) 
+
         pitches = torch.from_numpy(pitches).float()
         energies = torch.from_numpy(energies).float()
         durations = torch.from_numpy(durations).long()
 
         mels = torch.from_numpy(mels).float()
         mel_lens = torch.from_numpy(mel_lens).long()
+        max_mel_len = torch.max(mel_lens).item()
+        mel_mask = get_mask_from_lengths(mel_lens, max_mel_len)
 
         x = {"phoneme": phonemes,
              "phoneme_len": phoneme_lens,
+             "phoneme_mask": phoneme_mask,
              "text": texts,
+             "mel_len": mel_lens,
+             "mel_mask": mel_mask,
              "pitch": pitches,
              "energy": energies,
-             "duration": durations,
-             "mel_len": mel_lens}
-    
-        y = {"mel": mels}
+             "duration": durations,}
+
+        y = {"mel": mels,}
 
         return x, y
 
@@ -84,7 +92,7 @@ class LJSpeechDataModule(LightningDataModule):
 
     def test_dataloader(self):
         self.test_dataloader = DataLoader(self.test_dataset,
-                                          shuffle=True,
+                                          shuffle=False,
                                           batch_size=self.batch_size,
                                           collate_fn=self.collate_fn,
                                           num_workers=self.num_workers)
