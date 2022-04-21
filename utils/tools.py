@@ -318,7 +318,7 @@ def get_args():
                         help='Embedding dim')
     parser.add_argument('--kernel-size',
                         type=int,
-                        default=3,
+                        default=5,
                         help='Conv1d kernel size (Encoder/Decoder)')
     parser.add_argument('--expansion',
                         type=int,
