@@ -42,7 +42,7 @@ if __name__ == "__main__":
                                     warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                     depth=args.depth, n_blocks=args.n_blocks, reduction=args.reduction, head=args.head,
                                     embed_dim=args.embed_dim, kernel_size=args.kernel_size,
-                                    expansion=args.expansion)
+                                    expansion=args.expansion, wav_path=args.out_folder)
 
     
     trainer = Trainer(accelerator=args.accelerator, devices=args.devices, 
