@@ -29,7 +29,8 @@ if __name__ == "__main__":
         print("Pitch min/max", pitch_stats)
         print("Energy min/max", energy_stats)
 
-    phoneme2mel = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr, warmup_epochs=args.warmup_epochs,
+    phoneme2mel = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr, 
+                                    warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                     depth=args.depth, reduction=args.reduction, head=args.head,
                                     embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                     expansion=args.expansion)

@@ -132,3 +132,4 @@ preprocessed_data
 log
 lightning_logs
 *tar
+*.wav

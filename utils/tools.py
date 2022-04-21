@@ -51,52 +51,66 @@ def synth_one_sample(mel_pred,
                                        )
         wavfile.write(os.path.join(wav_path, "prediction.wav"), sampling_rate, wav_prediction[0])
 
+def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
+    wavs = vocoder(mels).squeeze(1)
+
+    wavs = (
+        wavs.cpu().numpy()
+        * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
+    ).astype("int16")
+    wavs = [wav for wav in wavs]
+
+    for i in range(len(mels)):
+        if lengths is not None:
+            wavs[i] = wavs[i][: lengths[i]]
+
+    return wavs
 
 #def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config):
+
+
 def synth_test_samples(mel,
-                       mel_len, 
-                       mel_pred, 
-                       mel_len_pred, 
-                       vocoder, 
-                       model_config, 
-                       preprocess_config, 
-                       wav_path,
-                       count=8):
-
-    if vocoder is not None:
-        from .model import vocoder_infer
-
-        sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
-        old_file = os.path.join(wav_path, "reconstruction0.wav")
-        if not os.path.isfile(old_file):
-            lengths = mel_len * preprocess_config["preprocessing"]["stft"]["hop_length"]
-            mel = mel.transpose(1, 2)
-            wav_reconstructions = vocoder_infer(
-                                                mel,
-                                                vocoder,
-                                                model_config,
-                                                preprocess_config,
-                                                lengths=lengths
-                                                )
-            for i, wav in enumerate(wav_reconstructions):
-                wavfile.write(os.path.join(wav_path, "reconstruction" + str(i) + ".wav"), sampling_rate, wav)
-                if i > count:
-                    break
-
-
-        lengths = mel_len_pred * preprocess_config["preprocessing"]["stft"]["hop_length"]
-        mel_pred = mel_pred.transpose(1, 2)
-        wav_predictions = vocoder_infer(
-                                        mel_pred,
-                                        vocoder,
-                                        model_config,
-                                        preprocess_config,
-                                        lengths=lengths
-                                        )
-        for i, wav in enumerate(wav_predictions):
-            wavfile.write(os.path.join(wav_path, "prediction" + str(i) + ".wav"), sampling_rate, wav)
-            if i > count:
+                       mel_len,
+                       mel_pred,
+                       mel_len_pred,
+                       vocoder,
+                       preprocess_config,
+                       wav_path="output"):
+    # create directory, ignore if exists
+    if not os.path.exists(wav_path):
+        os.makedirs(wav_path, exist_ok=True)
+    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    old_file = os.path.join(wav_path, "reconstruction0.wav")
+    if not os.path.isfile(old_file):
+        lengths = mel_len * \
+            preprocess_config["preprocessing"]["stft"]["hop_length"]
+        mel = mel.transpose(1, 2)
+        wav_reconstructions = vocoder_infer(
+            mel,
+            vocoder,
+            preprocess_config,
+            lengths=lengths
+        )
+        for i, wav in enumerate(wav_reconstructions):
+            wavfile.write(os.path.join(
+                wav_path, "reconstruction" + str(i) + ".wav"), sampling_rate, wav)
+            if i > 10:
                 break
+
+    lengths = mel_len_pred * \
+        preprocess_config["preprocessing"]["stft"]["hop_length"]
+    mel_pred = mel_pred.transpose(1, 2)
+    wav_predictions = vocoder_infer(
+        mel_pred,
+        vocoder,
+        preprocess_config,
+        lengths=lengths
+    )
+    for i, wav in enumerate(wav_predictions):
+        wavfile.write(os.path.join(wav_path, "prediction" +
+                                   str(i) + ".wav"), sampling_rate, wav)
+        if i > 10:
+            break
 
 
 def synth_samples(targets, predictions, vocoder, model_config, preprocess_config, path):
@@ -258,10 +272,10 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--accelerator", type=str, default="gpu")
     parser.add_argument("--devices", type=int, default=1)
-    parser.add_argument("--precision", default=16)
+    parser.add_argument("--precision", default=32, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_epochs", type=int, default=2000)
-    parser.add_argument("--warmup_epochs", type=int, default=10)
+    parser.add_argument("--warmup_epochs", type=int, default=25)
 
     parser.add_argument("--preprocess_config",
                         default="config/preprocess.yaml",
