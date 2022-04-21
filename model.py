@@ -27,13 +27,14 @@ def get_hifigan():
 
 class EfficientFSModule(LightningModule):
     def __init__(self, 
-                preprocess_config, lr=1e-3, 
+                preprocess_config, lr=1e-3, warmup_epochs=10,
                 depth=2, reduction=1, head=2, 
                 embed_dim=256, kernel_size=5, expansion=2):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
         self.lr = lr
+        self.warmup_epochs = warmup_epochs
 
         with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
             stats = json.load(f)
@@ -135,7 +136,7 @@ class EfficientFSModule(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x, train=False)
-        
+
 
     def test_epoch_end(self, outputs):
         pass
@@ -156,7 +157,7 @@ class EfficientFSModule(LightningModule):
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.lr)
         scheduler = CosineAnnealingWarmRestarts(
-            optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
+            optimizer, T_0=self.warmup_epochs, T_mult=1, eta_min=0., verbose=True)
         return [optimizer], [scheduler]
 
 

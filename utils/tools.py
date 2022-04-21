@@ -258,8 +258,10 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--accelerator", type=str, default="gpu")
     parser.add_argument("--devices", type=int, default=1)
+    parser.add_argument("--precision", default=16)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--max_epochs", type=int, default=80)
+    parser.add_argument("--max_epochs", type=int, default=2000)
+    parser.add_argument("--warmup_epochs", type=int, default=10)
 
     parser.add_argument("--preprocess_config",
                         default="config/preprocess.yaml",
