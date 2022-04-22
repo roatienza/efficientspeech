@@ -331,7 +331,7 @@ class PhonemeEncoder(nn.Module):
         if duration_target is None:
             duration_target = torch.round(duration_pred).squeeze()
         duration_target = duration_target.masked_fill(phoneme_mask, 0)
-        duration_target = torch.clamp(duration_target, min=0, max=2**15-1)
+        #duration_target = torch.clamp(duration_target, min=0, max=2**15-1)
 
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
