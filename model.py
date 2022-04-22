@@ -27,9 +27,9 @@ def get_hifigan():
 
 class EfficientFSModule(LightningModule):
     def __init__(self, 
-                preprocess_config, lr=1e-3, warmup_epochs=10, max_epochs=4000,
-                depth=2, n_blocks=2, reduction=1, head=2, 
-                embed_dim=256, kernel_size=5, expansion=2,
+                preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
+                depth=2, n_blocks=3, reduction=1, head=2, 
+                embed_dim=128, kernel_size=5, expansion=2,
                 wav_path="outputs"):
         super(EfficientFSModule, self).__init__()
 

@@ -1,15 +1,14 @@
+import torch
 
 from einops import rearrange
 from torch import nn
 from .blocks import EfficientSelfAttention, MixFFN
 from .acoustic import LengthRegulator
 from text.symbols import symbols
-#from utils.tools import get_mask_from_lengths
 
-import torch
 
 class Encoder(nn.Module):
-    """ Encoder """
+    """ Phoneme Encoder """
 
     def __init__(self, depth=2, embed_dim=128, kernel_size=5, expansion=2, reduction=4, head=2):
         super().__init__()
@@ -201,7 +200,7 @@ class Fuse(nn.Module):
 
 
 class FeatureUpsampler(nn.Module):
-    """ Upsample fused features using predicted duration """
+    """ Upsample fused features using target or predicted duration"""
 
     def __init__(self):
         super().__init__()
@@ -224,7 +223,6 @@ class MelDecoder(nn.Module):
     def __init__(self, dim, kernel_size=5, n_mel_channels=80, depth=2, n_blocks=2):
         super().__init__()
 
-        # arg parameters
         self.n_mel_channels = n_mel_channels
         dim2 = min(4*dim, 256)
         dim4 = 4*dim
@@ -244,7 +242,6 @@ class MelDecoder(nn.Module):
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim2)]))
     
         self.mel_linear = nn.Linear(dim2, self.n_mel_channels)
-        #self.norm = nn.LayerNorm(dim2)
 
 
     def forward(self, features, mask=None):
@@ -255,7 +252,7 @@ class MelDecoder(nn.Module):
             mel = rearrange(skip, 'b n c -> b c n') 
             for conv, act, norm in convs:
                 x = act(conv(mel))
-                x = norm(rearrange(x, 'b c n -> b n c')) # + rearrange(mel, 'b c n -> b n c'))
+                x = norm(rearrange(x, 'b c n -> b n c')) 
                 mel = rearrange(x, 'b n c -> b c n')
 
             skip = skip_norm(x + skip)
@@ -331,7 +328,6 @@ class PhonemeEncoder(nn.Module):
         if duration_target is None:
             duration_target = torch.round(duration_pred).squeeze()
         duration_target = duration_target.masked_fill(phoneme_mask, 0)
-        #duration_target = torch.clamp(duration_target, min=0, max=2**15-1)
 
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
@@ -347,7 +343,7 @@ class PhonemeEncoder(nn.Module):
 
         
 class Phoneme2Mel(nn.Module):
-    """ Mel Former """
+    """ From Phoneme Sequence to Mel Spectrogram """
 
     def __init__(self,
                  encoder,

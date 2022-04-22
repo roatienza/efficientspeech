@@ -9,3 +9,4 @@ inflect
 matplotlib
 scipy
 pillow
+einops
