@@ -24,7 +24,7 @@ if __name__ == "__main__":
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
 
-    datamodule.setup()
+    #datamodule.setup()
 
     #train_dataloader = datamodule.train_dataloader()
 

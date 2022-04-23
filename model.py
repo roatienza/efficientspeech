@@ -138,7 +138,7 @@ class EfficientFSModule(LightningModule):
 
 
     def test_step(self, batch, batch_idx):
-        if batch_idx==0:
+        if batch_idx==0 and (self.current_epoch%10==0 or self.current_epoch==self.max_epochs):
             x, y = batch
             y_hat = self.forward(x, train=False)
             mel = y["mel"]
