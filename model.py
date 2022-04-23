@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
 from pytorch_lightning import LightningModule, Callback
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 #from pytorch_lightning.callbacks import ModelCheckpoint
 from utils.tools import synth_test_samples
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
@@ -160,7 +160,7 @@ class EfficientFSModule(LightningModule):
         pass
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.lr)
+        optimizer = AdamW(self.parameters(), lr=self.lr)
         self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
         return [optimizer], [self.scheduler]
 
