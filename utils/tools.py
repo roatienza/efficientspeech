@@ -323,7 +323,11 @@ def get_args():
     parser.add_argument('--kernel-size',
                         type=int,
                         default=5,
-                        help='Conv1d kernel size (Encoder/Decoder)')
+                        help='Conv1d kernel size (Encoder)')
+    parser.add_argument('--decoder-kernel-size',
+                        type=int,
+                        default=5,
+                        help='Conv1d kernel size (Decoder)')
     parser.add_argument('--expansion',
                         type=int,
                         default=2,

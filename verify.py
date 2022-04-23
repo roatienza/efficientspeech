@@ -42,7 +42,8 @@ if __name__ == "__main__":
                                     warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                     depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
                                     reduction=args.reduction, head=args.head,
-                                    embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                    embed_dim=args.embed_dim, kernel_size=args.kernel_size, 
+                                    decoder_kernel_size=args.decoder_kernel_size,
                                     expansion=args.expansion, wav_path=args.out_folder)
 
     
