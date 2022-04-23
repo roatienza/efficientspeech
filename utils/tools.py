@@ -274,8 +274,8 @@ def get_args():
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--max_epochs", type=int, default=4000)
-    parser.add_argument("--warmup_epochs", type=int, default=40)
+    parser.add_argument("--max_epochs", type=int, default=4500)
+    parser.add_argument("--warmup_epochs", type=int, default=10)
 
     parser.add_argument("--preprocess_config",
                         default="config/preprocess.yaml",
@@ -300,6 +300,10 @@ def get_args():
                         type=int,
                         default=2,
                         help='Encoder depth')
+    parser.add_argument('--block-depth',
+                        type=int,
+                        default=3,
+                        help='Decoder block depth')
     parser.add_argument('--n-blocks',
                         type=int,
                         default=3,
@@ -318,7 +322,7 @@ def get_args():
                         help='Embedding dim')
     parser.add_argument('--kernel-size',
                         type=int,
-                        default=5,
+                        default=3,
                         help='Conv1d kernel size (Encoder/Decoder)')
     parser.add_argument('--expansion',
                         type=int,

@@ -220,7 +220,7 @@ class FeatureUpsampler(nn.Module):
 class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
-    def __init__(self, dim, kernel_size=5, n_mel_channels=80, depth=2, n_blocks=2):
+    def __init__(self, dim, kernel_size=5, n_mel_channels=80, n_blocks=2, block_depth=2):
         super().__init__()
 
         self.n_mel_channels = n_mel_channels
@@ -229,13 +229,13 @@ class MelDecoder(nn.Module):
         padding = kernel_size // 2
 
         self.fuse = nn.Sequential(nn.Linear(dim4, dim2),
-                                  nn.Tanh(), 
+                                  #nn.Tanh(), 
                                   nn.LayerNorm(dim2),)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
-            for _ in range(depth):
+            for _ in range(block_depth):
                 conv.append(nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
                             nn.Tanh(),
                             nn.LayerNorm(dim2),]))

@@ -28,7 +28,7 @@ def get_hifigan():
 class EfficientFSModule(LightningModule):
     def __init__(self, 
                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
-                depth=2, n_blocks=3, reduction=1, head=2, 
+                depth=2, n_blocks=3, block_depth=2, reduction=1, head=2, 
                 embed_dim=128, kernel_size=5, expansion=2,
                 wav_path="outputs"):
         super(EfficientFSModule, self).__init__()
@@ -53,10 +53,8 @@ class EfficientFSModule(LightningModule):
                                          kernel_size=kernel_size,
                                          expansion=expansion)
 
-        mel_decoder = MelDecoder(dim=embed_dim//reduction,
-                                 kernel_size=kernel_size,
-                                 depth=depth,
-                                 n_blocks=n_blocks)
+        mel_decoder = MelDecoder(dim=embed_dim//reduction, kernel_size=kernel_size,
+                                 n_blocks=n_blocks, block_depth=block_depth)
 
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
