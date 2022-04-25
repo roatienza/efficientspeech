@@ -65,23 +65,46 @@ def preprocess_english(text, preprocess_config):
 
     return np.array(sequence)
 
-def load_model(args, model, preprocess_config):
+
+def convert_to_torchscipt(args, pl_module, preprocess_config):
+    if not os.path.exists(args.checkpoints):
+        os.makedirs(args.checkpoints, exist_ok=True)
+    phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
+    hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
+    
+    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+
+    script = phoneme2mel.to_torchscript()
+    torch.jit.save(script, phoneme2mel_ckpt)
+    script = hifigan.to_torchscript()
+    torch.jit.save(script, hifigan_ckpt)
+
+
+def load_jit_modules(args):
+    phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
+    hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
+    phoneme2mel = torch.jit.load(phoneme2mel_ckpt)
+    hifigan = torch.jit.load(hifigan_ckpt)
+    return phoneme2mel, hifigan
+
+def load_module(args, pl_module, preprocess_config):
     print("Loading model checkpoint ...", args.checkpoint)
-    model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
-                                       lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                       depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                       reduction=args.reduction, head=args.head,
-                                       embed_dim=args.embed_dim, kernel_size=args.kernel_size,
-                                       decoder_kernel_size=args.decoder_kernel_size,
-                                       expansion=args.expansion)
-    model.eval()
-    phoneme2mel = model.phoneme2mel
-    model.hifigan.eval()
-    hifigan = model.hifigan
-    return  phoneme2mel, hifigan
+    pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
+                                               lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+                                               depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+                                               reduction=args.reduction, head=args.head,
+                                               embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                               decoder_kernel_size=args.decoder_kernel_size,
+                                               expansion=args.expansion)
+    pl_module.eval()
+    phoneme2mel = pl_module.phoneme2mel
+    pl_module.hifigan.eval()
+    hifigan = pl_module.hifigan
+    return phoneme2mel, hifigan
 
 
-def synthesize(args, model, preprocess_config):
+def synthesize(args, pl_module, preprocess_config):
+    assert(args.text is not None)
     #print("Loading model checkpoint ...", args.checkpoint)
     #model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
     #                                   lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -92,17 +115,22 @@ def synthesize(args, model, preprocess_config):
     #                                   expansion=args.expansion)
     #model.eval()
     #model.hifigan.eval()
-    phoneme2mel, hifigan = load_model(args, model, preprocess_config)
+    if args.use_jit:
+        phoneme2mel, hifigan = load_jit_modules(args)
+    else:
+        assert(args.checkpoint is not None)
+        phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
-    
+
     phoneme_len = np.array([len(phoneme[0])])
     #max_phoneme_len = max(phoneme_len)
     #print(phoneme)
     #print("Phoneme shape:", phoneme.shape)
     #return
 
-    phoneme = torch.from_numpy(phoneme).long() #.to(device)
-    phoneme_len =  torch.from_numpy(phoneme_len) #.to(device)
+    phoneme = torch.from_numpy(phoneme).long()  # .to(device)
+    phoneme_len = torch.from_numpy(phoneme_len)  # .to(device)
     max_phoneme_len = torch.max(phoneme_len).item()
     phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
     x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
@@ -113,11 +141,14 @@ def synthesize(args, model, preprocess_config):
     print("Mel shape:", mel_pred.shape)
     print("Mel length:", mel_pred_len)
     print("Synthesizing wav...")
-    synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan, preprocess_config=preprocess_config)
+    synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan,
+                     preprocess_config=preprocess_config)
+
 
 if __name__ == "__main__":
     args = get_args()
-    preprocess_config = yaml.load(open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
+    preprocess_config = yaml.load(
+        open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
     datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
@@ -136,22 +167,25 @@ if __name__ == "__main__":
         print("Pitch min/max", pitch_stats)
         print("Energy min/max", energy_stats)
 
-    phoneme2mel = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr, 
-                                    warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                    depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                    reduction=args.reduction, head=args.head,
-                                    embed_dim=args.embed_dim, kernel_size=args.kernel_size, 
-                                    decoder_kernel_size=args.decoder_kernel_size,
-                                    expansion=args.expansion, wav_path=args.out_folder)
+    pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
+                                  warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+                                  depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+                                  reduction=args.reduction, head=args.head,
+                                  embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                  decoder_kernel_size=args.decoder_kernel_size,
+                                  expansion=args.expansion, wav_path=args.out_folder)
 
     if args.synthesize:
-        synthesize(args, model=phoneme2mel, preprocess_config=preprocess_config)
-    
-    else:    
-        trainer = Trainer(accelerator=args.accelerator, devices=args.devices, 
-                     precision=args.precision,
-                     strategy="ddp", 
-                     max_epochs=args.max_epochs,)
+        synthesize(args, pl_module=pl_module,
+                   preprocess_config=preprocess_config)
+    elif args.to_torchscript:
+        convert_to_torchscipt(args, pl_module=pl_module,
+                              preprocess_config=preprocess_config)
+    else:
+        trainer = Trainer(accelerator=args.accelerator, devices=args.devices,
+                          precision=args.precision,
+                          strategy="ddp",
+                          max_epochs=args.max_epochs,)
 
-        trainer.fit(phoneme2mel, datamodule=datamodule)
+        trainer.fit(pl_module, datamodule=datamodule)
         #trainer.test(phoneme2mel, datamodule=datamodule)

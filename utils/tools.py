@@ -354,15 +354,35 @@ def get_args():
                         default=2.,
                         help='Energy Loss weight')
 
-    # check if verify
+    # use jit modules
+    parser.add_argument('--use-jit',
+                        action='store_true',
+                        help='Use JIT modules')
+    
+    parser.add_argument('--to-torchscript',
+                        action='store_true',
+                        help='Convert model to torchscript')
+    parser.add_argument("--phoneme2mel-jit",
+                        default="phoneme2mel_jit.pt",
+                        type=str,
+                        help="phoneme2mel checkpoint",)
+    parser.add_argument("--hifigan-jit",
+                        default="hifigan_jit.pt",
+                        type=str,
+                        help="hifigan checkpoint",)
+
     parser.add_argument('--synthesize',
                         action='store_true',
-                        help='Synthesize audio using pre-trained model')
+                        help='synthesize audio using pre-trained model')
     
     parser.add_argument("--checkpoint",
                         default=None,
                         type=str,
-                        help="path to model checkpoint",)
+                        help="path to model checkpoint file",)
+    parser.add_argument("--checkpoints",
+                        default="checkpoints",
+                        type=str,
+                        help="path to model checkpoints folder",)
     parser.add_argument("--text",
                         type=str,
                         default=None,
