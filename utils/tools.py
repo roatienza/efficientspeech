@@ -54,7 +54,7 @@ def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
     wavs = vocoder(mels).squeeze(1)
 
     wavs = (
-        wavs.cpu().numpy()
+        wavs.detach().numpy()
         * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
     ).astype("int16")
     wavs = [wav for wav in wavs]
