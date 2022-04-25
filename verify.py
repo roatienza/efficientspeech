@@ -67,7 +67,7 @@ def preprocess_english(text, preprocess_config):
 
 def synthesize(args, model, preprocess_config):
     print("Loading model checkpoint ..." , args.checkpoint)
-    model = model.load_from_checkpoint(args.checkpoint)
+    model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config)
     model.eval()
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
     
