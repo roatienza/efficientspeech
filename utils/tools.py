@@ -355,6 +355,11 @@ def get_args():
                         default=2.,
                         help='Energy Loss weight')
 
+    # check if verify
+    parser.add_argument('--synthesize',
+                        action='store_true',
+                        help='Synthesize audio using pre-trained model')
+    
     parser.add_argument("--checkpoint",
                         default=None,
                         type=str,
@@ -363,6 +368,8 @@ def get_args():
                         type=str,
                         default=None,
                         help="raw text to synthesize, for single-sentence mode only",)
+
+                        
     parser.add_argument("--pitch_control",
                         type=float,
                         default=1.0,
