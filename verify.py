@@ -11,6 +11,7 @@ from pytorch_lightning import Trainer
 
 from string import punctuation
 from g2p_en import G2p
+import hifigan
 
 from utils.tools import get_args, get_mask_from_lengths, synth_one_sample
 from model import EfficientFSModule
@@ -64,8 +65,7 @@ def preprocess_english(text, preprocess_config):
 
     return np.array(sequence)
 
-
-def synthesize(args, model, preprocess_config):
+def load_model(args, model, preprocess_config):
     print("Loading model checkpoint ...", args.checkpoint)
     model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                        lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -75,7 +75,24 @@ def synthesize(args, model, preprocess_config):
                                        decoder_kernel_size=args.decoder_kernel_size,
                                        expansion=args.expansion)
     model.eval()
+    phoneme2mel = model.phoneme2mel
     model.hifigan.eval()
+    hifigan = model.hifigan
+    return  phoneme2mel, hifigan
+
+
+def synthesize(args, model, preprocess_config):
+    #print("Loading model checkpoint ...", args.checkpoint)
+    #model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
+    #                                   lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+    #                                   depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+    #                                   reduction=args.reduction, head=args.head,
+    #                                   embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+    #                                   decoder_kernel_size=args.decoder_kernel_size,
+    #                                   expansion=args.expansion)
+    #model.eval()
+    #model.hifigan.eval()
+    phoneme2mel, hifigan = load_model(args, model, preprocess_config)
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
     
     phoneme_len = np.array([len(phoneme[0])])
@@ -90,13 +107,13 @@ def synthesize(args, model, preprocess_config):
     phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
     x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
     with torch.no_grad():
-        y = model(x, train=False)
+        y = phoneme2mel(x, train=False)
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
     print("Mel shape:", mel_pred.shape)
     print("Mel length:", mel_pred_len)
     print("Synthesizing wav...")
-    synth_one_sample(mel_pred, mel_pred_len, vocoder=model.hifigan, preprocess_config=preprocess_config)
+    synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan, preprocess_config=preprocess_config)
 
 if __name__ == "__main__":
     args = get_args()
