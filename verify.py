@@ -12,7 +12,7 @@ from pytorch_lightning import Trainer
 from string import punctuation
 from g2p_en import G2p
 
-from utils.tools import get_args, get_mask_from_lengths
+from utils.tools import get_args, get_mask_from_lengths, synth_one_sample
 from model import EfficientFSModule
 from text import text_to_sequence
 
@@ -93,6 +93,7 @@ def synthesize(args, model, preprocess_config):
     mel_pred_len = y["mel_len"]
     print("Mel shape:", mel_pred.shape)
     print("Mel length:", mel_pred_len)
+    synth_one_sample(mel_pred, mel_pred_len, vocoder=model.hifigan, preprocess_config=preprocess_config)
 
 if __name__ == "__main__":
     args = get_args()

@@ -30,26 +30,25 @@ def expand(values, durations):
     return np.array(out)
 
 
-def synth_one_sample(mel_pred, 
-                     mel_len_pred, 
-                     vocoder, 
-                     model_config, 
-                     preprocess_config, 
+def synth_one_sample(mel_pred,
+                     mel_len_pred,
+                     vocoder,
+                     preprocess_config,
                      wav_path="output"):
+    if not os.path.exists(wav_path):
+        os.makedirs(wav_path, exist_ok=True)
+    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    lengths = mel_len_pred * \
+        preprocess_config["preprocessing"]["stft"]["hop_length"]
+    mel_pred = mel_pred.transpose(1, 2)
+    wav_prediction = vocoder_infer(mel_pred,
+                                   vocoder,
+                                   preprocess_config,
+                                   lengths=lengths
+                                   )
+    wavfile.write(os.path.join(wav_path, "prediction.wav"),
+                  sampling_rate, wav_prediction[0])
 
-    if vocoder is not None:
-        from .model import vocoder_infer
-
-        sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
-        lengths = mel_len_pred * preprocess_config["preprocessing"]["stft"]["hop_length"]
-        mel_pred = mel_pred.transpose(1, 2)
-        wav_prediction = vocoder_infer(mel_pred,
-                                       vocoder,
-                                       model_config,
-                                       preprocess_config,
-                                       lengths=lengths
-                                       )
-        wavfile.write(os.path.join(wav_path, "prediction.wav"), sampling_rate, wav_prediction[0])
 
 def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
     wavs = vocoder(mels).squeeze(1)
@@ -369,7 +368,7 @@ def get_args():
                         default=None,
                         help="raw text to synthesize, for single-sentence mode only",)
 
-                        
+
     parser.add_argument("--pitch_control",
                         type=float,
                         default=1.0,
