@@ -75,6 +75,7 @@ def synthesize(args, model, preprocess_config):
                                        decoder_kernel_size=args.decoder_kernel_size,
                                        expansion=args.expansion)
     model.eval()
+    model.hifigan.eval()
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
     
     phoneme_len = np.array([len(phoneme[0])])
