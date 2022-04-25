@@ -49,7 +49,10 @@ class EfficientSelfAttention(nn.Module):
         head = self.head
 
         q, k, v = (self.to_q(x), self.to_k(x), self.to_v(x))
-        q, k, v = map(lambda t: rearrange(t, 'b n (h c) -> (b h) n c', h=head), (q, k, v))
+        #q, k, v = map(lambda t: rearrange(t, 'b n (h c) -> (b h) n c', h=head), (q, k, v))
+        q = rearrange(q, 'b n (h c) -> (b h) n c', h=head)
+        k = rearrange(k, 'b n (h c) -> (b h) n c', h=head)
+        v = rearrange(v, 'b n (h c) -> (b h) n c', h=head)
 
         attn = einsum('b i d, b j d -> b i j', q, k) * self.scale
 
