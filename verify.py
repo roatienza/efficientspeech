@@ -77,7 +77,7 @@ def synthesize(args, model, preprocess_config):
     model.eval()
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
     
-    #phoneme_len = np.array([len(phoneme[0])])
+    phoneme_len = np.array([len(phoneme[0])])
     #max_phoneme_len = max(phoneme_len)
     print(phoneme)
     print("Phoneme shape:", phoneme.shape)
