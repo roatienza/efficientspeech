@@ -95,9 +95,9 @@ class ResBlock(torch.nn.Module):
 
     def forward(self, x):
         for c1, c2 in zip(self.convs1, self.convs2):
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = F.leaky_relu(x, 0.1)
             xt = c1(xt)
-            xt = F.leaky_relu(xt, LRELU_SLOPE)
+            xt = F.leaky_relu(xt, 0.1)
             xt = c2(xt)
             x = xt + x
         return x
@@ -149,7 +149,7 @@ class Generator(torch.nn.Module):
     def forward(self, x):
         x = self.conv_pre(x)
         for i in range(self.num_upsamples):
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = F.leaky_relu(x, 0.1)
             x = self.ups[i](x)
             xs = None
             for j in range(self.num_kernels):
