@@ -84,9 +84,10 @@ def synthesize(args, model, preprocess_config):
     #return
 
     phoneme = torch.from_numpy(phoneme).long() #.to(device)
-    #phoneme_len =  torch.from_numpy(phoneme_len) #.to(device)
-    #phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
-    x = {"phoneme": phoneme, "phoneme_mask": None}
+    phoneme_len =  torch.from_numpy(phoneme_len) #.to(device)
+    max_phoneme_len = torch.max(phoneme_len).item()
+    phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
+    x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
     y = model(x, train=False)
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
