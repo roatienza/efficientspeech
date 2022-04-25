@@ -81,7 +81,7 @@ def synthesize(args, model, preprocess_config):
     #max_phoneme_len = max(phoneme_len)
     print(phoneme)
     print("Phoneme shape:", phoneme.shape)
-    return
+    #return
 
     phoneme = torch.from_numpy(phoneme).long() #.to(device)
     #phoneme_len =  torch.from_numpy(phoneme_len) #.to(device)
@@ -90,6 +90,8 @@ def synthesize(args, model, preprocess_config):
     y = model(x, train=False)
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
+    print("Mel shape:", mel_pred.shape)
+    print("Mel length:", mel_pred_len)
 
 if __name__ == "__main__":
     args = get_args()
