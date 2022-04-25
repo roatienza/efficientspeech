@@ -74,12 +74,14 @@ def convert_to_torchscipt(args, pl_module, preprocess_config):
     
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
 
-    print("Saving JIT script ... ", phoneme2mel_ckpt)
-    script = torch.jit.script(phoneme2mel) #phoneme2mel.to_torchscript()
-    torch.jit.save(script, phoneme2mel_ckpt)
     print("Saving JIT script ... ", hifigan_ckpt)
     script = torch.jit.script(hifigan) #hifigan.to_torchscript()
     torch.jit.save(script, hifigan_ckpt)
+    
+    print("Saving JIT script ... ", phoneme2mel_ckpt)
+    script = torch.jit.script(phoneme2mel) #phoneme2mel.to_torchscript()
+    torch.jit.save(script, phoneme2mel_ckpt)
+
 
 
 def load_jit_modules(args):
