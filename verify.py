@@ -80,8 +80,8 @@ def synthesize(args, model, preprocess_config):
     
     phoneme_len = np.array([len(phoneme[0])])
     #max_phoneme_len = max(phoneme_len)
-    print(phoneme)
-    print("Phoneme shape:", phoneme.shape)
+    #print(phoneme)
+    #print("Phoneme shape:", phoneme.shape)
     #return
 
     phoneme = torch.from_numpy(phoneme).long() #.to(device)
@@ -89,11 +89,13 @@ def synthesize(args, model, preprocess_config):
     max_phoneme_len = torch.max(phoneme_len).item()
     phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
     x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
-    y = model(x, train=False)
+    with torch.no_grad():
+        y = model(x, train=False)
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
     print("Mel shape:", mel_pred.shape)
     print("Mel length:", mel_pred_len)
+    print("Synthesizing wav...")
     synth_one_sample(mel_pred, mel_pred_len, vocoder=model.hifigan, preprocess_config=preprocess_config)
 
 if __name__ == "__main__":
