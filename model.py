@@ -28,6 +28,8 @@ def get_hifigan(infer_device=None):
     vocoder.load_state_dict(ckpt["generator"])
     vocoder.eval()
     vocoder.remove_weight_norm()
+    for p in vocoder.parameters():
+        p.requires_grad = False
     
     return vocoder
 
