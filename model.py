@@ -12,25 +12,29 @@ from torch.optim import Adam, AdamW
 from utils.tools import synth_test_samples
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
-def get_hifigan():
+def get_hifigan(infer_device=None):
     with open("hifigan/config.json", "r") as f:
         config = json.load(f)
     
     config = hifigan.AttrDict(config)
     vocoder = hifigan.Generator(config)
-    ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar")
+    if infer_device is not None:
+        ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar", map_location=torch.device(infer_device))
+    else:
+        ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar")
     vocoder.load_state_dict(ckpt["generator"])
     vocoder.eval()
     vocoder.remove_weight_norm()
     
     return vocoder
 
+
 class EfficientFSModule(LightningModule):
     def __init__(self, 
                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
                 depth=2, n_blocks=3, block_depth=2, reduction=1, head=2, 
                 embed_dim=128, kernel_size=5, decoder_kernel_size=5, expansion=2,
-                wav_path="outputs"):
+                wav_path="outputs", infer_device=None):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
@@ -59,7 +63,7 @@ class EfficientFSModule(LightningModule):
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
 
-        self.hifigan = get_hifigan()
+        self.hifigan = get_hifigan(infer_device)
 
     def forward(self, x, train=True):
         return self.phoneme2mel(x, train=train)

@@ -1,23 +1,11 @@
 import re
-import argparse
-import os
-import json
-from string import punctuation
-
-import torch
-import yaml
 import numpy as np
-from torch.utils.data import DataLoader
+import torch
+
+from string import punctuation
 from g2p_en import G2p
-
-from utils.model import get_model, get_vocoder
-from utils.tools import to_device, synth_one_sample, get_args
-from dataset import TextDataset
 from text import text_to_sequence
-
-from modules import PhonemeEncoder, MelDecoder, Phoneme2Mel, WavDecoder
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from utils.tools import get_mask_from_lengths, synth_one_sample
 
 def read_lexicon(lex_path):
     lexicon = {}
@@ -57,80 +45,52 @@ def preprocess_english(text, preprocess_config):
 
     return np.array(sequence)
 
+def synthesize(args, pl_module, preprocess_config):
+    assert(args.text is not None)
+    if args.use_jit:
+        phoneme2mel, hifigan = load_jit_modules(args)
+    else:
+        assert(args.checkpoint is not None)
+        phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
 
-def main(args):
-    model_config = yaml.load(open(args.model_config, "r"), Loader=yaml.FullLoader)
-    preprocess_config = yaml.load(
-        open(args.preprocess_config, "r"), Loader=yaml.FullLoader
-    )
-    torch.backends.cudnn.benchmark = True
-    with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
-        stats = json.load(f)
-        pitch_stats = stats["pitch"][:2]
-        energy_stats = stats["energy"][:2]
-        print("Pitch min/max", pitch_stats)
-        print("Energy min/max", energy_stats)
-
-    phoneme_encoder = PhonemeEncoder(pitch_stats=pitch_stats,
-                                     energy_stats=energy_stats,
-                                     depth=args.depth,
-                                     reduction=args.reduction,
-                                     head=args.head,
-                                     embed_dim=args.embed_dim,
-                                     kernel_size=args.kernel_size,
-                                     expansion=args.expansion)
-
-    mel_decoder = MelDecoder(dims=phoneme_encoder.dims,
-                             kernel_size=args.kernel_size)
-
-    phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
-                              decoder=mel_decoder,
-                              distill=args.distill).to(device)
-
-
-    #phoneme2mel = Phoneme2Mel(pitch_stats=pitch_stats,
-    #                          energy_stats=energy_stats, 
-    #                          depth=args.depth, 
-    #                          reduction=args.reduction,
-    #                          head=args.head,
-    #                          embed_dim=args.embed_dim,
-    #                          kernel_size=args.kernel_size,
-    #                          activation=args.activation,
-    #                          expansion=args.expansion).to(device)
-    phoneme2mel.eval()
-
-
-    print("Loading model checkpoint ..." , args.checkpoint)
-    checkpoint = torch.load(args.checkpoint)
-    phoneme2mel.load_state_dict(checkpoint["phoneme2mel"])
-
-    vocoder = get_vocoder(model_config, device)
-
-    #ids = raw_texts = [args.text[:100]]
-    #speakers = np.array([args.speaker_id])
     phoneme = np.array([preprocess_english(args.text, preprocess_config)])
+
     phoneme_len = np.array([len(phoneme[0])])
-    max_phoneme_len = max(phoneme_len)
-    print(phoneme)
 
-    phoneme = torch.from_numpy(phoneme).long().to(device)
-    phoneme_len =  torch.from_numpy(phoneme_len).to(device)
-
+    phoneme = torch.from_numpy(phoneme).long()  
+    phoneme_len = torch.from_numpy(phoneme_len) 
+    max_phoneme_len = torch.max(phoneme_len).item()
+    phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
+    x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
     with torch.no_grad():
-        mel_pred, len_pred = phoneme2mel(phoneme, 
-                                         phoneme_len=phoneme_len, 
-                                         max_phoneme_len=max_phoneme_len,)
-    #mel_pred, _, _, _, mel_len_pred, _, _, _ = pred
-    synth_one_sample(mel_pred, 
-                     len_pred, 
-                     vocoder, 
-                     model_config, 
-                     preprocess_config)
-                    
+        y = phoneme2mel(x, train=False)
+    mel_pred = y["mel"]
+    mel_pred_len = y["mel_len"]
+    print("Mel shape:", mel_pred.shape)
+    print("Mel length:", mel_pred_len)
+    print("Synthesizing wav...")
+    synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan,
+                     preprocess_config=preprocess_config)
 
-if __name__ == "__main__":
-    args = get_args()
-    assert args.text is not None
-    assert args.checkpoint is not None
-    main(args)
 
+def load_jit_modules(args):
+    phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
+    hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
+    phoneme2mel = torch.jit.load(phoneme2mel_ckpt)
+    hifigan = torch.jit.load(hifigan_ckpt)
+    return phoneme2mel, hifigan
+
+def load_module(args, pl_module, preprocess_config):
+    print("Loading model checkpoint ...", args.checkpoint)
+    pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
+                                               lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+                                               depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+                                               reduction=args.reduction, head=args.head,
+                                               embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                               decoder_kernel_size=args.decoder_kernel_size,
+                                               expansion=args.expansion, infer_device=args.infer_device)
+    pl_module.eval()
+    phoneme2mel = pl_module.phoneme2mel
+    pl_module.hifigan.eval()
+    hifigan = pl_module.hifigan
+    return phoneme2mel, hifigan

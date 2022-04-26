@@ -133,3 +133,5 @@ log
 lightning_logs
 *tar
 *.wav
+*.ckpt
+*.txt
