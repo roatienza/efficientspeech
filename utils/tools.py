@@ -420,8 +420,8 @@ def get_args():
                         help="control the speed of the whole utterance, larger value for slower speaking rate",)
     args = parser.parse_args()
 
-    if args.seed == 0:
-        args.seed = random.randint(0, 1e3)
+    #if args.seed == 0:
+    #    args.seed = random.randint(0, 1e3)
 
     args.num_workers *= args.devices
 

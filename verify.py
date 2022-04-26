@@ -45,6 +45,8 @@ def convert_to_torchscipt(args, pl_module, preprocess_config):
 if __name__ == "__main__":
     args = get_args()
     print("args")
+
+    exit(0)
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
     print("preprocess_config")
