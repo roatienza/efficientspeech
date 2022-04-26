@@ -71,6 +71,7 @@ if __name__ == "__main__":
                                   embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                   decoder_kernel_size=args.decoder_kernel_size,
                                   expansion=args.expansion, wav_path=args.out_folder,
+                                  hifigan_checkpoint=args.hifigan_checkpoint,
                                   infer_device=args.infer_device)
 
     if args.synthesize:

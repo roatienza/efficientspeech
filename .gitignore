@@ -135,3 +135,4 @@ lightning_logs
 *.wav
 *.ckpt
 *.txt
+*.DS_Store

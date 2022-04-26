@@ -375,6 +375,11 @@ def get_args():
                         type=str,
                         help="hifigan checkpoint",)
 
+    parser.add_argument("--hifigan-checkpoint",
+                        default="hifigan/LJ_V2/generator_v2",
+                        type=str,
+                        help="hifigan checkpoint",)                      
+
     parser.add_argument('--synthesize',
                         action='store_true',
                         help='synthesize audio using pre-trained model')

@@ -92,7 +92,9 @@ def load_module(args, pl_module, preprocess_config):
                                                reduction=args.reduction, head=args.head,
                                                embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                                decoder_kernel_size=args.decoder_kernel_size,
-                                               expansion=args.expansion, infer_device=args.infer_device)
+                                               expansion=args.expansion, 
+                                               hifigan_checkpoint=args.hifigan_checkpoint,
+                                               infer_device=args.infer_device)
     pl_module.eval()
     phoneme2mel = pl_module.phoneme2mel
     pl_module.hifigan.eval()
