@@ -1,6 +1,5 @@
 
 import yaml
-import json
 import os
 
 import numpy as np
@@ -11,7 +10,7 @@ from pytorch_lightning import Trainer
 
 from utils.tools import get_args
 from model import EfficientFSModule
-from synthesize import synthesize, load_module
+#from synthesize import synthesize, load_module
 
 
 def print_args(args):
