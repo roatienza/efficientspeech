@@ -6,7 +6,6 @@ import random
 import torch
 import torch.nn.functional as F
 import numpy as np
-import matplotlib
 from scipy.io import wavfile
 from matplotlib import pyplot as plt
 
@@ -375,10 +374,10 @@ def get_args():
                         type=str,
                         help="hifigan checkpoint",)
 
-    #parser.add_argument("--hifigan-checkpoint",
-    #                    default="hifigan/LJ_V2/generator_v2",
-    #                    type=str,
-    #                    help="hifigan checkpoint",)                      
+    parser.add_argument("--hifigan-checkpoint",
+                        default="hifigan/LJ_V2/generator_v2",
+                        type=str,
+                        help="hifigan checkpoint",)                      
 
     parser.add_argument('--synthesize',
                         action='store_true',
@@ -420,8 +419,8 @@ def get_args():
                         help="control the speed of the whole utterance, larger value for slower speaking rate",)
     args = parser.parse_args()
 
-    #if args.seed == 0:
-    #    args.seed = random.randint(0, 1e3)
+    if args.seed == 0:
+        args.seed = random.randint(0, 1e3)
 
     args.num_workers *= args.devices
 

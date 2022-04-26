@@ -10,7 +10,7 @@ from pytorch_lightning import Trainer
 
 from utils.tools import get_args
 from model import EfficientFSModule
-#from synthesize import synthesize, load_module
+
 
 
 def print_args(args):
@@ -42,18 +42,16 @@ def convert_to_torchscipt(args, pl_module, preprocess_config):
 
 
 if __name__ == "__main__":
-    #args = get_args()
-    print("args")
+    args = get_args()
 
-    exit(0)
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
-    print("preprocess_config")
+
     datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
 
-    print("Datamodule")
+
     #datamodule.setup()
 
     #train_dataloader = datamodule.train_dataloader()
@@ -75,11 +73,12 @@ if __name__ == "__main__":
                                   embed_dim=args.embed_dim, kernel_size=args.kernel_size,
                                   decoder_kernel_size=args.decoder_kernel_size,
                                   expansion=args.expansion, wav_path=args.out_folder,
-                                  #hifigan_checkpoint=args.hifigan_checkpoint,
+                                  hifigan_checkpoint=args.hifigan_checkpoint,
                                   infer_device=args.infer_device)
 
-    print("pl_module")
+
     if args.synthesize:
+        from synthesize import synthesize, load_module
         phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
         synthesize(args, phoneme2mel, hifigan,
                    preprocess_config=preprocess_config)
