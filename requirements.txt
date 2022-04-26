@@ -10,3 +10,4 @@ matplotlib
 scipy
 pillow
 einops
+g2p-en
