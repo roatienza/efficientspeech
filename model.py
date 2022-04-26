@@ -13,15 +13,18 @@ from utils.tools import synth_test_samples
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 def get_hifigan(infer_device=None):
-    with open("hifigan/config.json", "r") as f:
+    with open("hifigan/LJ_V2/config.json", "r") as f:
         config = json.load(f)
-    
+
     config = hifigan.AttrDict(config)
+    torch.manual_seed(config.seed)
     vocoder = hifigan.Generator(config)
     if infer_device is not None:
-        ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar", map_location=torch.device(infer_device))
+        vocoder.to(infer_device)
+        ckpt = torch.load("hifigan/LJ_V2/generator_v2", map_location=torch.device(infer_device))
     else:
-        ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar")
+        ckpt = torch.load("hifigan/LJ_V2/generator_v2")
+        #ckpt = torch.load("hifigan/generator_LJSpeech.pth.tar")
     vocoder.load_state_dict(ckpt["generator"])
     vocoder.eval()
     vocoder.remove_weight_norm()

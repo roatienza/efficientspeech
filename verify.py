@@ -57,12 +57,12 @@ if __name__ == "__main__":
     #for i, (x, y) in enumerate(train_dataloader):
     #    print(x["phoneme"].shape)
 
-    with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
-        stats = json.load(f)
-        pitch_stats = stats["pitch"][:2]
-        energy_stats = stats["energy"][:2]
-        print("Pitch min/max", pitch_stats)
-        print("Energy min/max", energy_stats)
+    #with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
+    #    stats = json.load(f)
+    #    pitch_stats = stats["pitch"][:2]
+    #    energy_stats = stats["energy"][:2]
+    #    print("Pitch min/max", pitch_stats)
+    #    print("Energy min/max", energy_stats)
 
     pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
                                   warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -74,7 +74,8 @@ if __name__ == "__main__":
                                   infer_device=args.infer_device)
 
     if args.synthesize:
-        synthesize(args, pl_module=pl_module,
+        phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+        synthesize(args, phoneme2mel, hifigan,
                    preprocess_config=preprocess_config)
     elif args.to_torchscript:
         convert_to_torchscipt(args, pl_module=pl_module,

@@ -11,53 +11,43 @@ Dependencies:
     pip install nemo_toolkit['all']
 '''
 
+from tkinter import font
 import torch
 #import nemo.collections.asr as nemo_asr
-
+import yaml
 import gc
-#import sounddevice as sd
+import sounddevice as sd
 import time
-import argparse
+
 import numpy as np
 import threading
-#import PySimpleGUI as sg
+import PySimpleGUI as sg
 from queue import Queue
-from decoder import ChunkBufferDecoder
-from utils import AudioChunkIterator
+#from decoder import ChunkBufferDecoder
+#from utils import AudioChunkIterator
+from model import EfficientFSModule
 
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sample_rate", default=16000, type=int)
-    parser.add_argument("--chunk_len_in_secs", default=4, type=int)
-    parser.add_argument("--context_len_in_secs", default=2, type=int)
-    parser.add_argument("--stride", default=4, type=int)
+from utils.tools import get_args
+from synthesize import load_module, synthesize
 
-    parser.add_argument("--rpi", default=False, action="store_true")
-    args = parser.parse_args()
-    return args
 
-def get_model(device):
-    torch.cuda.empty_cache()
-    gc.collect()
-    model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_conformer_ctc_large", map_location=device)
-    model = model.to(device)
-    return model
-
-def audio_callback(indata, frames, time, status):
-    global g_chunk
-    global g_num_samples
+def audio_callback(outdata, frames, time, status):
+    #global g_chunk
+    #global g_num_samples
     # size is (30,1). Samples every 10 only.
     # fill the graph queue with data
-    g_draw_q.put(indata[::10, 0])
-    if g_chunk is None:
-        g_chunk = indata.copy()
-    else:
-        g_chunk = np.concatenate((g_chunk, indata), axis=0)
-        # if one chunk, enqueue it 
-        if g_chunk.shape[0] > g_num_samples:
-            g_chunk = g_chunk.squeeze()
-            g_audio_q.put(g_chunk[:g_num_samples])
-            g_chunk = None
+    global current_frame
+    global g_draw_q
+    
+    if status:
+        print(status)
+    chunksize = min(len(wav) - current_frame, frames)
+    outdata[:chunksize] = wav[current_frame:current_frame + chunksize]
+    g_draw_q.put(outdata[::10, 0])
+    if chunksize < frames:
+        outdata[chunksize:] = 0
+        raise sd.CallbackStop()
+    current_frame += chunksize
 
 
 class GraphThread(threading.Thread):
@@ -97,20 +87,11 @@ class GraphThread(threading.Thread):
                 x += 2
 
 
-class ASRThread(threading.Thread):
-    def __init__(self, device, model, sample_rate, chunk_len_in_secs, context_len_in_secs, stride):
-        super(ASRThread, self).__init__()
+class TTSThread(threading.Thread):
+    def __init__(self, mdeol):
+        super(TTSThread, self).__init__()
         self.device = device
-        self.model = model
-        self.sample_rate = sample_rate
-        self.chunk_len_in_secs = chunk_len_in_secs
-        self.context_len_in_secs = context_len_in_secs
-        self.buffer_len_in_secs = chunk_len_in_secs + 2 * context_len_in_secs
-        self.stride = stride
-        self.decoder = ChunkBufferDecoder(asr_model=self.model,
-                                          chunk_len_in_secs=self.chunk_len_in_secs,
-                                          buffer_len_in_secs=self.buffer_len_in_secs,
-                                          stride=self.stride)
+
 
     def run(self):
         global g_run_thread
@@ -126,17 +107,10 @@ class ASRThread(threading.Thread):
             waveform = g_audio_q.get()
             if g_run_thread is False:
                 return
-            chunk_reader = AudioChunkIterator(waveform, self.chunk_len_in_secs, self.sample_rate)
-            chunk_len = self.sample_rate * self.chunk_len_in_secs
-            buffer_list = []
-            for chunk_ in chunk_reader:
-                sampbuffer[:-chunk_len] = sampbuffer[chunk_len:]
-                sampbuffer[-chunk_len:] = chunk_
-                buffer_list.append(np.array(sampbuffer))
+            
 
             start_time = time.time()
-            transcription = self.decoder.transcribe_buffers(buffer_list, plot=False)
-            transcription = transcription.strip()
+
 
             elapsed_time = time.time() - start_time
             total_runtime += elapsed_time
@@ -146,16 +120,8 @@ class ASRThread(threading.Thread):
             if g_run_thread is False:
                 return
 
-            if transcription == old_transcription:
-                self.decoder.all_preds = []
-                self.decoder.all_targets = []
-                g_window['-OUTPUT-'].update("")
-                g_window.refresh()
-                continue
-            else:
-                old_transcription = transcription
             
-            g_window['-OUTPUT-'].update(transcription)
+            #g_window['-OUTPUT-'].update(transcription)
             g_window['-TIME-'].update(f"{ave_pred_time:.2f} sec")
             g_window.refresh()
             
@@ -163,6 +129,18 @@ class ASRThread(threading.Thread):
 # main routine
 if __name__ == "__main__":
     args = get_args()
+    preprocess_config = yaml.load(
+        open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
+    args.wav_path = None
+    pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
+                                  warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+                                  depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+                                  reduction=args.reduction, head=args.head,
+                                  embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                  decoder_kernel_size=args.decoder_kernel_size,
+                                  expansion=args.expansion, wav_path=args.out_folder,
+                                  infer_device=args.infer_device)
+    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
     SIZE_X = 320
     SIZE_Y = 120
 
@@ -177,7 +155,7 @@ if __name__ == "__main__":
                              expand_y=True,
                              expand_x=True,
                              background_color='black',
-                             write_only=True,
+                             write_only=False,
                              pad=(10, 10),
                              no_scrollbar=True,
                              justification='left',
@@ -185,44 +163,78 @@ if __name__ == "__main__":
                              font=("Helvetica", 60),
                              key='-OUTPUT-',)
     time_text = sg.Text("Voice", pad=(20, 20), font=("Helvetica", 20), key='-TIME-')
-    layout = [ [multiline], [graph], [time_text],]
+    play_button = sg.Button('Play', key='-PLAY-', font=("Helvetica", 20))
+    clear_button = sg.Button('Clear', key='-CLEAR-', font=("Helvetica", 20))
+    quit_button = sg.Button('Quit', key='-QUIT-', font=("Helvetica", 20))
+    layout = [ [multiline], [graph, time_text], [play_button, clear_button, quit_button] ]
     #layout = [[sg.Sizer(0,500), sg.Column([[sg.Sizer(500,0)]] + layout, element_justification='c', pad=(0,0))]]
-    g_window = sg.Window('Voice', layout, location=(0, 0), 
+    g_window = sg.Window('Voice', layout, location=(0, 0), default_button_element_size=(2,1),
                          resizable=True).Finalize()
     g_window.Maximize()
     g_window.BringToFront()
     g_window.Refresh()
     
-    g_audio_q = Queue()
+    #g_audio_q = Queue()
     g_draw_q = Queue()
 
     g_run_thread = True
     g_chunk = None
-    g_num_samples = args.chunk_len_in_secs * args.sample_rate
+    #g_num_samples = args.chunk_len_in_secs * args.sample_rate
 
     graph_thread = GraphThread(SIZE_X, SIZE_Y)
-    graph_thread.start()
+    #graph_thread.start()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = get_model(device)
-    stride = args.stride # 8 for Citrinet
-    asr_thread = ASRThread(device, model, args.sample_rate,
-                           args.chunk_len_in_secs, args.context_len_in_secs, 
-                           stride=stride)
-    asr_thread.start()
-
-    sd.default.samplerate = args.sample_rate
+    #model = get_model(device)
+    #stride = args.stride # 8 for Citrinet
+    #asr_thread = ASRThread(device, model, args.sample_rate,
+    #                       args.chunk_len_in_secs, args.context_len_in_secs, 
+    #                       stride=stride)
+    #asr_thread.start()
+    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    sd.default.samplerate = sampling_rate
     sd.default.channels = 1
-    stream = sd.InputStream(device=None, callback=audio_callback)
+    
+    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+    
 
-    with stream:
-        while True:
-            event, values = g_window.read()
-            if event == sg.WIN_CLOSED:
-                g_run_thread = False
-                graph_thread.join(1)
-                asr_thread.join(3)
-                break
+    while True:
+        event, values = g_window.read()
+        if event == sg.WIN_CLOSED or event == '-QUIT-':
+            g_run_thread = False
+            #graph_thread.join(1)
+            #asr_thread.join(3)
+            break
+        elif event == '-PLAY-':
+            #tts_event = threading.Event()
+            current_frame = 0
+            args.text = multiline.get()
+            start_time = time.time()
+            wav = synthesize(args, phoneme2mel, hifigan,
+                             preprocess_config=preprocess_config)
 
-    stream.close()
+            elapsed_time = time.time() - start_time
+
+            #g_window['-OUTPUT-'].update(transcription)
+            g_window['-TIME-'].update(f"{elapsed_time:.2f} sec")
+            g_window.refresh()
+
+            wav = np.reshape(wav, (-1, 1))
+            sd.play(wav)
+            sd.wait()
+            #stream = sd.OutputStream(samplerate=sampling_rate,
+            #                         channels=1,
+            #                         callback=audio_callback)
+            #print("wav shape", wav.shape)
+            
+            #with stream:
+            #    tts_event.wait()
+                #stream.write(wav)
+                #sd.play(wav)
+
+
+        elif event == '-CLEAR-':
+            multiline.update('')
+
+    #stream.close()
     g_window.close()

@@ -35,7 +35,7 @@ def synth_one_sample(mel_pred,
                      vocoder,
                      preprocess_config,
                      wav_path="output"):
-    if not os.path.exists(wav_path):
+    if wav_path is not None:
         os.makedirs(wav_path, exist_ok=True)
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     lengths = mel_len_pred * \
@@ -46,12 +46,16 @@ def synth_one_sample(mel_pred,
                                    preprocess_config,
                                    lengths=lengths
                                    )
-    wavfile.write(os.path.join(wav_path, "prediction.wav"),
-                  sampling_rate, wav_prediction[0])
+    if wav_path is not None:
+        wavfile.write(os.path.join(wav_path, "prediction.wav"),
+                      sampling_rate, wav_prediction[0])
+
+    return wav_prediction[0]
 
 
 def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
-    wavs = vocoder(mels).squeeze(1)
+    with torch.no_grad():
+        wavs = vocoder(mels).squeeze(1)
 
     wavs = (
         wavs.detach().numpy()
@@ -383,6 +387,10 @@ def get_args():
                         default=None,
                         type=str,
                         help="path to model checkpoint file",)
+    parser.add_argument("--wav-path",
+                        default="outputs",
+                        type=str,
+                        help="path to wav file to be generated",)
     parser.add_argument("--checkpoints",
                         default="checkpoints",
                         type=str,
