@@ -43,7 +43,7 @@ def convert_to_torchscipt(args, pl_module, preprocess_config):
 
 
 if __name__ == "__main__":
-    args = get_args()
+    #args = get_args()
     print("args")
 
     exit(0)
