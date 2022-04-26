@@ -44,8 +44,10 @@ def convert_to_torchscipt(args, pl_module, preprocess_config):
 
 if __name__ == "__main__":
     args = get_args()
+    print("args")
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
+    print("preprocess_config")
     datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
