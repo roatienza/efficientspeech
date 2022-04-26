@@ -50,6 +50,7 @@ if __name__ == "__main__":
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
 
+    print("Datamodule")
     #datamodule.setup()
 
     #train_dataloader = datamodule.train_dataloader()
@@ -74,6 +75,7 @@ if __name__ == "__main__":
                                   hifigan_checkpoint=args.hifigan_checkpoint,
                                   infer_device=args.infer_device)
 
+    print("pl_module")
     if args.synthesize:
         phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
         synthesize(args, phoneme2mel, hifigan,
