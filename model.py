@@ -16,6 +16,8 @@ def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None):
     # get the main path
     main_path = os.path.dirname(os.path.abspath(checkpoint))
     json_config = os.path.join(main_path, "config.json")
+    print("Using config: ", json_config)
+    print("Using hifigan checkpoint: ", checkpoint)
     with open(json_config, "r") as f:
         config = json.load(f)
 
