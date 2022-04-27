@@ -70,9 +70,10 @@ if __name__ == "__main__":
 
 
     if args.synthesize:
-        from synthesize import synthesize, load_module
+        from synthesize import synthesize, load_module, get_lexicon_and_g2p
         phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-        synthesize(args, phoneme2mel, hifigan,
+        lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
+        synthesize(lexicon, g2p, args, phoneme2mel, hifigan,
                    preprocess_config=preprocess_config)
     elif args.to_torchscript:
         convert_to_torchscipt(args, pl_module=pl_module,

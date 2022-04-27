@@ -194,6 +194,8 @@ if __name__ == "__main__":
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     sd.default.samplerate = sampling_rate
     sd.default.channels = 1
+    sd.default.dtype = 'int16'
+    
     
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
     lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
@@ -216,12 +218,19 @@ if __name__ == "__main__":
             elapsed_time = time.time() - start_time
 
             #g_window['-OUTPUT-'].update(transcription)
-            g_window['-TIME-'].update(f"{elapsed_time:.2f} sec")
-            g_window.refresh()
 
             wav = np.reshape(wav, (-1, 1))
+            message = f"Synthesis time: {elapsed_time:.2f} sec"
+            wav_len = wav.shape[0] / sampling_rate
+            message += f"\nVoice length: {wav_len:.2f} sec"
+            real_time_factor = wav_len / elapsed_time
+            message += f"\nReal time factor: {real_time_factor:.2f}"
+            g_window['-TIME-'].update(message)
+            g_window.refresh()
+
             sd.play(wav)
             sd.wait()
+
             #stream = sd.OutputStream(samplerate=sampling_rate,
             #                         channels=1,
             #                         callback=audio_callback)

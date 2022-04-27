@@ -72,8 +72,8 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config):
     #    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
     start_time = time.time()
     phoneme = np.array([preprocess_english(lexicon, g2p, args.text, preprocess_config)])
-    elapsed_time = time.time() - start_time
-    print("(Phoneme Generation) time: {:.4f}s".format(elapsed_time))
+    #elapsed_time = time.time() - start_time
+    #print("(Phoneme Generation) time: {:.4f}s".format(elapsed_time))
     phoneme_len = np.array([len(phoneme[0])])
 
     phoneme = torch.from_numpy(phoneme).long()  
@@ -92,9 +92,9 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config):
     print("(Phoneme2Mel) Synthesizing MEL time: {:.4f}s".format(elapsed_time))
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
-    print("Mel shape:", mel_pred.shape)
-    print("Mel length:", mel_pred_len)
-    print("Synthesizing wav...")
+    #print("Mel shape:", mel_pred.shape)
+    #print("Mel length:", mel_pred_len)
+    #print("Synthesizing wav...")
     return synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan,
                             preprocess_config=preprocess_config, wav_path=args.wav_path)
 
