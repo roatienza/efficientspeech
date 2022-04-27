@@ -160,7 +160,7 @@ if __name__ == "__main__":
                              no_scrollbar=True,
                              justification='left',
                              autoscroll=True,
-                             font=("Helvetica", 60),
+                             font=("Helvetica", 36),
                              key='-OUTPUT-',)
     time_text = sg.Text("Voice", pad=(20, 20), font=("Helvetica", 20), key='-TIME-')
     play_button = sg.Button('Play', key='-PLAY-', font=("Helvetica", 20))
