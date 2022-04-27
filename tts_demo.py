@@ -192,6 +192,7 @@ if __name__ == "__main__":
     #                       stride=stride)
     #asr_thread.start()
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    sd.default.reset()
     sd.default.samplerate = sampling_rate
     sd.default.channels = 1
     sd.default.dtype = 'int16'
