@@ -28,7 +28,7 @@ from queue import Queue
 from model import EfficientFSModule
 
 from utils.tools import get_args
-from synthesize import load_module, synthesize
+from synthesize import load_module, synthesize, get_lexicon_and_g2p
 
 
 def audio_callback(outdata, frames, time, status):
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     sd.default.channels = 1
     
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-    
+    lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
 
     while True:
         event, values = g_window.read()
@@ -210,7 +210,7 @@ if __name__ == "__main__":
             current_frame = 0
             args.text = multiline.get()
             start_time = time.time()
-            wav = synthesize(args, phoneme2mel, hifigan,
+            wav = synthesize(lexicon, g2p, args, phoneme2mel, hifigan,
                              preprocess_config=preprocess_config)
 
             elapsed_time = time.time() - start_time

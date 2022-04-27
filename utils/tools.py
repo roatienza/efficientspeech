@@ -1,6 +1,6 @@
 import os
 import json
-
+import time
 import argparse
 import random
 import torch
@@ -53,9 +53,13 @@ def synth_one_sample(mel_pred,
 
 
 def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
+    start_time = time.time()
     with torch.no_grad():
         wavs = vocoder(mels).squeeze(1)
+    elapsed_time = time.time() - start_time
+    print("(HiFiGAN) Synthesizing WAV time: {:.4f}s".format(elapsed_time))
 
+    start_time = time.time()
     wavs = (
         wavs.cpu().numpy()
         * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
@@ -65,7 +69,8 @@ def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
     for i in range(len(mels)):
         if lengths is not None:
             wavs[i] = wavs[i][: lengths[i]]
-
+    elapsed_time = time.time() - start_time
+    print("(Postprocess) WAV time: {:.4f}s".format(elapsed_time))
     return wavs
 
 #def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config):

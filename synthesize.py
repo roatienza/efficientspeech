@@ -20,11 +20,24 @@ def read_lexicon(lex_path):
     return lexicon
 
 
-def preprocess_english(text, preprocess_config):
-    text = text.rstrip(punctuation)
+def get_lexicon_and_g2p(preprocess_config):
     lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
-
     g2p = G2p()
+    return lexicon, g2p
+
+
+def preprocess_english(lexicon, g2p, text, preprocess_config):
+    text = text.rstrip(punctuation)
+    #start_time = time.time()
+    #lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
+    #elapsed_time = time.time() - start_time
+    #print("(Lexicon) time: {:.4f}s".format(elapsed_time))
+
+    #start_time = time.time()
+    #g2p = G2p()
+    #elapsed_time = time.time() - start_time
+    #print("(G2P) time: {:.4f}s".format(elapsed_time))
+    #start_time = time.time()
     phones = []
     words = re.split(r"([,;.\-\?\!\s+])", text)
     for w in words:
@@ -35,27 +48,32 @@ def preprocess_english(text, preprocess_config):
     phones = "{" + "}{".join(phones) + "}"
     phones = re.sub(r"\{[^\w\s]?\}", "{sp}", phones)
     phones = phones.replace("}{", " ")
+    #elapsed_time = time.time() - start_time
+    #print("(Graphene to Phoneme) time: {:.4f}s".format(elapsed_time))
 
     print("Raw Text Sequence: {}".format(text))
     print("Phoneme Sequence: {}".format(phones))
+    #start_time = time.time()
     sequence = np.array(
         text_to_sequence(
             phones, preprocess_config["preprocessing"]["text"]["text_cleaners"]
         )
     )
-
+    #elapsed_time = time.time() - start_time
+    #print("(Text to Sequence) time: {:.4f}s".format(elapsed_time))
     return np.array(sequence)
 
-def synthesize(args, phoneme2mel, hifigan, preprocess_config):
+def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config):
     assert(args.text is not None)
     #if args.use_jit:
     #    phoneme2mel, hifigan = load_jit_modules(args)
     #else:
     #    assert(args.checkpoint is not None)
     #    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-
-    phoneme = np.array([preprocess_english(args.text, preprocess_config)])
-
+    start_time = time.time()
+    phoneme = np.array([preprocess_english(lexicon, g2p, args.text, preprocess_config)])
+    elapsed_time = time.time() - start_time
+    print("(Phoneme Generation) time: {:.4f}s".format(elapsed_time))
     phoneme_len = np.array([len(phoneme[0])])
 
     phoneme = torch.from_numpy(phoneme).long()  
@@ -63,11 +81,15 @@ def synthesize(args, phoneme2mel, hifigan, preprocess_config):
     max_phoneme_len = torch.max(phoneme_len).item()
     phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
     x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
+
+    elapsed_time = time.time() - start_time
+    print("(Preprocess) time: {:.4f}s".format(elapsed_time))
+
     start_time = time.time()
     with torch.no_grad():
         y = phoneme2mel(x, train=False)
     elapsed_time = time.time() - start_time
-    print("Synthesizing MEL time: {:.2f}s".format(elapsed_time))
+    print("(Phoneme2Mel) Synthesizing MEL time: {:.4f}s".format(elapsed_time))
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
     print("Mel shape:", mel_pred.shape)
