@@ -33,7 +33,8 @@ def synth_one_sample(mel_pred,
                      mel_len_pred,
                      vocoder,
                      preprocess_config,
-                     wav_path="output"):
+                     wav_path="output",
+                     verbose=False):
     if wav_path is not None:
         os.makedirs(wav_path, exist_ok=True)
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
@@ -43,8 +44,9 @@ def synth_one_sample(mel_pred,
     wav_prediction = vocoder_infer(mel_pred,
                                    vocoder,
                                    preprocess_config,
-                                   lengths=lengths
-                                   )
+                                   lengths=lengths,
+                                   verbose=verbose)
+                                   
     if wav_path is not None:
         wavfile.write(os.path.join(wav_path, "prediction.wav"),
                       sampling_rate, wav_prediction[0])
@@ -52,14 +54,20 @@ def synth_one_sample(mel_pred,
     return wav_prediction[0]
 
 
-def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
-    start_time = time.time()
+def vocoder_infer(mels, vocoder, preprocess_config, lengths=None, verbose=False):
+    if verbose:
+        start_time = time.time()
+    
     with torch.no_grad():
         wavs = vocoder(mels).squeeze(1)
-    elapsed_time = time.time() - start_time
-    print("(HiFiGAN) Synthesizing WAV time: {:.4f}s".format(elapsed_time))
 
-    start_time = time.time()
+    if verbose:
+        elapsed_time = time.time() - start_time
+        print("(HiFiGAN) Synthesizing WAV time: {:.4f}s".format(elapsed_time))
+
+    if verbose:
+        start_time = time.time()
+
     wavs = (
         wavs.cpu().numpy()
         * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
@@ -69,11 +77,12 @@ def vocoder_infer(mels, vocoder, preprocess_config, lengths=None):
     for i in range(len(mels)):
         if lengths is not None:
             wavs[i] = wavs[i][: lengths[i]]
-    elapsed_time = time.time() - start_time
-    print("(Postprocess) WAV time: {:.4f}s".format(elapsed_time))
-    return wavs
 
-#def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config):
+    if verbose:
+        elapsed_time = time.time() - start_time
+        print("(Postprocess) WAV time: {:.4f}s".format(elapsed_time))
+
+    return wavs
 
 
 def synth_test_samples(mel,
@@ -409,19 +418,9 @@ def get_args():
                         default=None,
                         help="raw text to synthesize, for single-sentence mode only",)
 
-
-    parser.add_argument("--pitch_control",
-                        type=float,
-                        default=1.0,
-                        help="control the pitch of the whole utterance, larger value for higher pitch",)
-    parser.add_argument("--energy_control",
-                        type=float,
-                        default=1.0,
-                        help="control the energy of the whole utterance, larger value for larger volume",)
-    parser.add_argument("--duration_control",
-                        type=float,
-                        default=1.0,
-                        help="control the speed of the whole utterance, larger value for slower speaking rate",)
+    parser.add_argument('--verbose',
+                        action='store_true',
+                        help='print out debug information')
     args = parser.parse_args()
 
     if args.seed == 0:

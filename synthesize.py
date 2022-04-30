@@ -1,4 +1,5 @@
 import re
+from tabnanny import verbose
 import numpy as np
 import torch
 import time
@@ -63,17 +64,18 @@ def preprocess_english(lexicon, g2p, text, preprocess_config):
     #print("(Text to Sequence) time: {:.4f}s".format(elapsed_time))
     return np.array(sequence)
 
-def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config):
+def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verbose=False):
     assert(args.text is not None)
     #if args.use_jit:
     #    phoneme2mel, hifigan = load_jit_modules(args)
     #else:
     #    assert(args.checkpoint is not None)
     #    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-    start_time = time.time()
+
+    if verbose:
+        start_time = time.time()
+    
     phoneme = np.array([preprocess_english(lexicon, g2p, args.text, preprocess_config)])
-    #elapsed_time = time.time() - start_time
-    #print("(Phoneme Generation) time: {:.4f}s".format(elapsed_time))
     phoneme_len = np.array([len(phoneme[0])])
 
     phoneme = torch.from_numpy(phoneme).long()  
@@ -82,19 +84,22 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config):
     phoneme_mask = get_mask_from_lengths(phoneme_len, max_phoneme_len)
     x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
 
-    elapsed_time = time.time() - start_time
-    print("(Preprocess) time: {:.4f}s".format(elapsed_time))
+    if verbose:
+        elapsed_time = time.time() - start_time
+        print("(Preprocess) time: {:.4f}s".format(elapsed_time))
 
-    start_time = time.time()
+        start_time = time.time()
+    
     with torch.no_grad():
         y = phoneme2mel(x, train=False)
-    elapsed_time = time.time() - start_time
-    print("(Phoneme2Mel) Synthesizing MEL time: {:.4f}s".format(elapsed_time))
+    
+    if verbose:
+        elapsed_time = time.time() - start_time
+        print("(Phoneme2Mel) Synthesizing MEL time: {:.4f}s".format(elapsed_time))
+    
     mel_pred = y["mel"]
     mel_pred_len = y["mel_len"]
-    #print("Mel shape:", mel_pred.shape)
-    #print("Mel length:", mel_pred_len)
-    #print("Synthesizing wav...")
+
     return synth_one_sample(mel_pred, mel_pred_len, vocoder=hifigan,
                             preprocess_config=preprocess_config, wav_path=args.wav_path)
 
@@ -116,7 +121,8 @@ def load_module(args, pl_module, preprocess_config):
                                                decoder_kernel_size=args.decoder_kernel_size,
                                                expansion=args.expansion, 
                                                hifigan_checkpoint=args.hifigan_checkpoint,
-                                               infer_device=args.infer_device)
+                                               infer_device=args.infer_device, 
+                                               verbose=args.verbose)
     pl_module.eval()
     phoneme2mel = pl_module.phoneme2mel
     pl_module.hifigan.eval()

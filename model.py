@@ -12,12 +12,13 @@ from torch.optim import Adam, AdamW
 from utils.tools import synth_test_samples
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
-def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None):
+def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
     # get the main path
     main_path = os.path.dirname(os.path.abspath(checkpoint))
     json_config = os.path.join(main_path, "config.json")
-    print("Using config: ", json_config)
-    print("Using hifigan checkpoint: ", checkpoint)
+    if verbose:
+        print("Using config: ", json_config)
+        print("Using hifigan checkpoint: ", checkpoint)
     with open(json_config, "r") as f:
         config = json.load(f)
 
@@ -45,7 +46,7 @@ class EfficientFSModule(LightningModule):
                 depth=2, n_blocks=3, block_depth=2, reduction=1, head=2, 
                 embed_dim=128, kernel_size=5, decoder_kernel_size=5, expansion=2,
                 wav_path="outputs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2", 
-                infer_device=None):
+                infer_device=None, verbose=False):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
@@ -74,7 +75,8 @@ class EfficientFSModule(LightningModule):
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
 
-        self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint, infer_device=infer_device)
+        self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint,
+                                   infer_device=infer_device, verbose=verbose)
 
     def forward(self, x, train=True):
         return self.phoneme2mel(x, train=train)

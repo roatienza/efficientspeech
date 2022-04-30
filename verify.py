@@ -1,4 +1,5 @@
 
+
 import yaml
 import os
 
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     #for i, (x, y) in enumerate(train_dataloader):
     #    print(x["phoneme"].shape)
 
+
     pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
                                   warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                   depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
@@ -66,7 +68,7 @@ if __name__ == "__main__":
                                   decoder_kernel_size=args.decoder_kernel_size,
                                   expansion=args.expansion, wav_path=args.out_folder,
                                   hifigan_checkpoint=args.hifigan_checkpoint,
-                                  infer_device=args.infer_device)
+                                  infer_device=args.infer_device, verbose=args.verbose)
 
 
     if args.synthesize:
@@ -74,7 +76,7 @@ if __name__ == "__main__":
         phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
         lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
         synthesize(lexicon, g2p, args, phoneme2mel, hifigan,
-                   preprocess_config=preprocess_config)
+                   preprocess_config=preprocess_config, verbose=args.verbose)
     elif args.to_torchscript:
         convert_to_torchscipt(args, pl_module=pl_module,
                               preprocess_config=preprocess_config)
