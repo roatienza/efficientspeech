@@ -221,15 +221,14 @@ class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
     def __init__(self, dim, kernel_size=5, n_mel_channels=80, 
-                 n_blocks=2, block_depth=2, dropout=0.0,):
+                 n_blocks=2, block_depth=2,):
         super().__init__()
 
         self.n_mel_channels = n_mel_channels
         dim2 = min(4*dim, 256)
         dim4 = 4*dim
         padding = kernel_size // 2
-        self.dropout = dropout
-
+  
         self.fuse = nn.Sequential(nn.Linear(dim4, dim2),
                                   #nn.Tanh(), 
                                   nn.LayerNorm(dim2),)
@@ -252,9 +251,9 @@ class MelDecoder(nn.Module):
 
         for convs, skip_norm in self.blocks:
             mel = rearrange(skip, 'b n c -> b c n') 
-            x = nn.Dropout(self.dropout)(mel)
+           
             for conv, act, norm in convs:
-                x = act(conv(x))
+                x = act(conv(mel))
                 x = norm(rearrange(x, 'b c n -> b n c')) 
                 mel = rearrange(x, 'b n c -> b c n')
 

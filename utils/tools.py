@@ -293,7 +293,7 @@ def get_args():
     parser.add_argument("--max_epochs", type=int, default=4500)
     parser.add_argument("--warmup_epochs", type=int, default=20)
 
-    parser.add_argument("--preprocess_config",
+    parser.add_argument("--preprocess-config",
                         default="config/preprocess.yaml",
                         type=str,
                         help="path to preprocess.yaml",)
