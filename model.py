@@ -41,12 +41,12 @@ def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verb
 
 
 class EfficientFSModule(LightningModule):
-    def __init__(self, 
-                preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
-                depth=2, n_blocks=3, block_depth=2, reduction=1, head=2, 
-                embed_dim=128, kernel_size=5, decoder_kernel_size=5, expansion=2,
-                wav_path="outputs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2", 
-                infer_device=None, verbose=False):
+    def __init__(self,
+                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
+                 depth=2, n_blocks=3, block_depth=2, reduction=1, head=2,
+                 embed_dim=128, kernel_size=5, decoder_kernel_size=5, expansion=2,
+                 wav_path="outputs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
+                 infer_device=None, verbose=False):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
@@ -182,29 +182,7 @@ class EfficientFSModule(LightningModule):
         return [optimizer], [self.scheduler]
 
 
-class WandbCallback(Callback):
-    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # log 10 sample audio predictions from the first batch
-        if batch_idx == 0:
-            n = 10
-            x, y = batch
-            mel = outputs["mel"]
-            
-           
-            
-            wavs = torch.squeeze(wavs, dim=1)
-            wavs = [ (wav.cpu().numpy()*32768.0).astype("int16") for wav in wavs]
-            
-            #sample_rate = pl_module.hparams.sample_rate
-            #idx_to_class = pl_module.hparams.idx_to_class
-            
-            # log audio samples and predictions as a W&B Table
-            #columns = ['audio', 'mel', 'ground truth', 'prediction']
-            #data = [[wandb.Audio(wav, sample_rate=sample_rate), wandb.Image(mel), idx_to_class[label], idx_to_class[pred]] for wav, mel, label, pred in list(
-            #    zip(wavs[:n], mels[:n], labels[:n], preds[:n]))]
-            #wandb_logger.log_table(
-            #    key='ResNet18 on KWS using PyTorch Lightning',
-            #    columns=columns,
+,
             #    data=data)
 
 
