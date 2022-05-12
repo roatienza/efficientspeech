@@ -39,11 +39,14 @@ def preprocess_english(lexicon, g2p, text, preprocess_config):
     #elapsed_time = time.time() - start_time
     #print("(G2P) time: {:.4f}s".format(elapsed_time))
     #start_time = time.time()
+    lang = preprocess_config["preprocessing"]["text"]["language"]
     phones = []
     words = re.split(r"([,;.\-\?\!\s+])", text)
     for w in words:
         if w.lower() in lexicon:
             phones += lexicon[w.lower()]
+        elif lang == "t1":
+            phones += list(w.lower())
         else:
             phones += list(filter(lambda p: p != " ", g2p(w)))
     phones = "{" + "}{".join(phones) + "}"
