@@ -182,8 +182,4 @@ class EfficientFSModule(LightningModule):
         return [optimizer], [self.scheduler]
 
 
-,
-            #    data=data)
-
-
     
