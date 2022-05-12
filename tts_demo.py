@@ -29,7 +29,7 @@ from model import EfficientFSModule
 
 from utils.tools import get_args
 from synthesize import load_module, synthesize, get_lexicon_and_g2p
-
+from scipy.io import wavfile
 
 def audio_callback(outdata, frames, time, status):
     #global g_chunk
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
             sd.play(wav)
             sd.wait()
-
+            wavfile.write("output.wav", sampling_rate, wav)
             #stream = sd.OutputStream(samplerate=sampling_rate,
             #                         channels=1,
             #                         callback=audio_callback)

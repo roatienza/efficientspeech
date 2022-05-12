@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import time
 
+
 from string import punctuation
 from g2p_en import G2p
 from text import text_to_sequence
@@ -29,16 +30,7 @@ def get_lexicon_and_g2p(preprocess_config):
 
 def preprocess_english(lexicon, g2p, text, preprocess_config):
     text = text.rstrip(punctuation)
-    #start_time = time.time()
-    #lexicon = read_lexicon(preprocess_config["path"]["lexicon_path"])
-    #elapsed_time = time.time() - start_time
-    #print("(Lexicon) time: {:.4f}s".format(elapsed_time))
 
-    #start_time = time.time()
-    #g2p = G2p()
-    #elapsed_time = time.time() - start_time
-    #print("(G2P) time: {:.4f}s".format(elapsed_time))
-    #start_time = time.time()
     lang = preprocess_config["preprocessing"]["text"]["language"]
     phones = []
     words = re.split(r"([,;.\-\?\!\s+])", text)
@@ -52,19 +44,17 @@ def preprocess_english(lexicon, g2p, text, preprocess_config):
     phones = "{" + "}{".join(phones) + "}"
     phones = re.sub(r"\{[^\w\s]?\}", "{sp}", phones)
     phones = phones.replace("}{", " ")
-    #elapsed_time = time.time() - start_time
-    #print("(Graphene to Phoneme) time: {:.4f}s".format(elapsed_time))
+
 
     print("Raw Text Sequence: {}".format(text))
     print("Phoneme Sequence: {}".format(phones))
-    #start_time = time.time()
+
     sequence = np.array(
         text_to_sequence(
             phones, preprocess_config["preprocessing"]["text"]["text_cleaners"]
         )
     )
-    #elapsed_time = time.time() - start_time
-    #print("(Text to Sequence) time: {:.4f}s".format(elapsed_time))
+
     return np.array(sequence)
 
 def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verbose=False):
