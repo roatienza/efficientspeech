@@ -108,12 +108,14 @@ class LJSpeechDataset(Dataset):
         self.preprocessed_path = preprocess_config["path"]["preprocessed_path"]
         self.cleaners = preprocess_config["preprocessing"]["text"]["text_cleaners"]
         #self.batch_size = batch_size
-
+        self.max_text_length = preprocess_config["preprocessing"]["text"]["max_length"]
         self.basename, self.speaker, self.text, self.raw_text = self.process_meta(filename)
         with open(os.path.join(self.preprocessed_path, "speakers.json")) as f:
             self.speaker_map = json.load(f)
         self.sort = sort
         self.drop_last = drop_last
+
+        
 
     def __len__(self):
         return len(self.text)
@@ -169,6 +171,8 @@ class LJSpeechDataset(Dataset):
             raw_text = []
             for line in f.readlines():
                 n, s, t, r = line.strip("\n").split("|")
+                if len(r) > self.max_text_length:
+                    continue
                 name.append(n)
                 speaker.append(s)
                 text.append(t)

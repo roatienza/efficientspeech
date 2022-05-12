@@ -11,6 +11,7 @@ preprocessing:
   text:
     text_cleaners: []
     language: "t1"
+    max_length: 40
   audio:
     sampling_rate: 22050
     max_wav_value: 32768.0
