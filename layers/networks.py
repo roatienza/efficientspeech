@@ -55,7 +55,7 @@ class Encoder(nn.Module):
             x = merge1x1(x)
             x = rearrange(x, 'b c n -> b n c')
             # self-attention with skip connect
-            pool = round(n / x.shape[-2])
+            pool = n // x.shape[-2]
             y, attn_mask = attn(x, mask=mask, pool=pool)
             x = norm(y + x)
             if attn_mask is not None:

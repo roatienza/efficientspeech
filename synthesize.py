@@ -1,5 +1,4 @@
 import re
-from tabnanny import verbose
 import numpy as np
 import torch
 import time
@@ -55,7 +54,7 @@ def preprocess_english(lexicon, g2p, text, preprocess_config):
         )
     )
 
-    return np.array(sequence)
+    return sequence
 
 def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verbose=False):
     assert(args.text is not None)
@@ -85,7 +84,7 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verb
     
     with torch.no_grad():
         y = phoneme2mel(x, train=False)
-    
+        
     if verbose:
         elapsed_time = time.time() - start_time
         print("(Phoneme2Mel) Synthesizing MEL time: {:.4f}s".format(elapsed_time))
@@ -117,6 +116,15 @@ def load_module(args, pl_module, preprocess_config):
                                                infer_device=args.infer_device, 
                                                verbose=args.verbose)
     pl_module.eval()
+
+    if args.onnx is not None:
+        # random tensor of type int64
+        phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
+        # random tensor of type bool
+        phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
+        x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
+        pl_module.to_onnx(args.onnx, x, export_params=True)
+    
     phoneme2mel = pl_module.phoneme2mel
     pl_module.hifigan.eval()
     hifigan = pl_module.hifigan

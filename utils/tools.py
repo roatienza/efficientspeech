@@ -421,6 +421,11 @@ def get_args():
     parser.add_argument('--verbose',
                         action='store_true',
                         help='print out debug information')
+
+    parser.add_argument('--onnx',
+                        type=str,
+                        default=None,
+                        help='convert to onnx model')
     args = parser.parse_args()
 
     if args.seed == 0:
