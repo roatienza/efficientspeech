@@ -6,7 +6,7 @@ import math
 
 from utils.tools import pad
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class LengthRegulator(nn.Module):
     """Length Regulator"""
@@ -27,7 +27,7 @@ class LengthRegulator(nn.Module):
         else:
             output = pad(output)
 
-        return output, torch.LongTensor(mel_len).to(device)
+        return output, torch.LongTensor(mel_len).to(x.device)
 
     def expand(self, batch, predicted):
         out = list()
