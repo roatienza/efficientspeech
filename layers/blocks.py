@@ -107,7 +107,8 @@ class Attention(nn.Module):
             if pool > 1:
                 mod = mask.shape[-1] % pool
                 if mod > 0:
-                    mask = F.pad(mask, (0, pool-mod), value=True)
+                    pad = [0, int(pool-mod)]
+                    mask = F.pad(mask, pad, value=True)
                 #print("Mask shape:", mask.shape)
                 mask = reduce(mask, 'b (n p) -> b n', 'max', p=pool)
                 #print("Reduced mask shape:", mask.shape)
