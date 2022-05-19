@@ -15,13 +15,13 @@ from tkinter import font
 import torch
 #import nemo.collections.asr as nemo_asr
 import yaml
-import gc
-import sounddevice as sd
+#import gc
+
 import time
 
 import numpy as np
 import threading
-import PySimpleGUI as sg
+
 from queue import Queue
 #from decoder import ChunkBufferDecoder
 #from utils import AudioChunkIterator
@@ -141,6 +141,11 @@ if __name__ == "__main__":
                                   expansion=args.expansion, wav_path=args.out_folder,
                                   infer_device=args.infer_device)
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+    if args.onnx:
+        exit(0)
+    else:
+        import sounddevice as sd
+        import PySimpleGUI as sg
     SIZE_X = 320
     SIZE_Y = 120
 
@@ -201,7 +206,7 @@ if __name__ == "__main__":
     sd.default.latency = 'low'
     
     
-    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
+    #phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
     lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
 
     while True:
