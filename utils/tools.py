@@ -426,6 +426,10 @@ def get_args():
                         type=str,
                         default=None,
                         help='convert to onnx model')
+    parser.add_argument('--jit',
+                        type=str,
+                        default=None,
+                        help='convert to jit model')
     args = parser.parse_args()
 
     if args.seed == 0:

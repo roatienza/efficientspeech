@@ -125,6 +125,12 @@ def load_module(args, pl_module, preprocess_config):
         x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
         print("Converting to ONNX ...", args.onnx)
         pl_module.to_onnx(args.onnx, x, export_params=True)
+    elif args.jit is not None:
+        print("Converting to JIT ...", args.jit)
+        #pl_module.to_jit()
+        script = pl_module.to_torchscript()
+        torch.jit.save(script, args.jit)
+
     
     phoneme2mel = pl_module.phoneme2mel
     pl_module.hifigan.eval()

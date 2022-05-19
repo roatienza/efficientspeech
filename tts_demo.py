@@ -141,7 +141,7 @@ if __name__ == "__main__":
                                   expansion=args.expansion, wav_path=args.out_folder,
                                   infer_device=args.infer_device)
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-    if args.onnx:
+    if args.onnx or args.jit:
         exit(0)
     else:
         import sounddevice as sd
