@@ -311,11 +311,11 @@ class PhonemeEncoder(nn.Module):
 
     def forward(self, x, train=True):
         phoneme = x["phoneme"]
-        if train:
-            phoneme_mask = x["phoneme_mask"]
-        else:
-            phoneme_mask = None
-            
+        #if train:
+        phoneme_mask = x["phoneme_mask"]
+        #else:
+        #    phoneme_mask = None
+
         pitch_target = x["pitch"] if train else None
         energy_target = x["energy"] if train  else None
         duration_target = x["duration"] if train  else None
