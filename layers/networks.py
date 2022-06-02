@@ -3,7 +3,7 @@ import torch
 
 #from einops import rearrange
 from torch import nn
-from .blocks import EfficientSelfAttention, MixFFN, Attention
+from .blocks import EfficientSelfAttention, MixFFN, Attention, SelfAttention
 from .acoustic import LengthRegulator
 from text.symbols import symbols
 
@@ -33,7 +33,8 @@ class Encoder(nn.Module):
                         nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, padding=padding, bias=False),
                         nn.Conv1d(dim_in, dim_out, kernel_size=1, bias=False), 
                         #EfficientSelfAttention(dim_out, head=head), 
-                        Attention(dim_out, num_heads=head), 
+                        #Attention(dim_out, num_heads=head), 
+                        SelfAttention(dim_out, num_heads=head),
                         MixFFN(dim_out, expansion),
                         nn.LayerNorm(dim_out),
                         ]))
@@ -53,11 +54,9 @@ class Encoder(nn.Module):
         for merge3x3, merge1x1, attn, mixffn, norm in self.attn_blocks:
             # after each encoder block, merge features
             x = x.permute(0, 2, 1)
-            #x = rearrange(x, 'b n c -> b c n')
             x = merge3x3(x)
             x = merge1x1(x)
             x = x.permute(0, 2, 1)
-            #x = rearrange(x, 'b c n -> b n c')
             # self-attention with skip connect
             pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             #pool = round(n / x.shape[-2])
@@ -138,16 +137,12 @@ class AcousticDecoder(nn.Module):
 
     def forward(self, fused_features):
         y = fused_features.permute(0, 2, 1)
-        #y = rearrange(fused_features, 'b n c -> b c n')
         y = self.conv1(y)
         y = y.permute(0, 2, 1)
-        #y = rearrange(y, 'b c n -> b n c')
         y = self.dropout(self.norm1(y))
         y = y.permute(0, 2, 1)
-        #y = rearrange(y, 'b n c -> b c n')
         y = self.conv2(y)
         y = y.permute(0, 2, 1)
-        #y = rearrange(y, 'b c n -> b n c')
         y = self.dropout(self.norm2(y))
         features = y
         y = self.linear(y)
@@ -172,7 +167,6 @@ class Fuse(nn.Module):
             self.mlps.append(
                     nn.ModuleList([
                         nn.Linear(d, dim),
-                        #nn.Upsample(scale_factor=upsample) if upsample>1 else nn.Identity()
                         nn.ConvTranspose1d(dim, dim, kernel_size=kernel_size, stride=upsample) if upsample>1 else nn.Identity()
                         ]))
 
@@ -189,7 +183,6 @@ class Fuse(nn.Module):
             x = mlp(feature)
             # upsample operates on the n or seqlen dim
             x = x.permute(0, 2, 1)
-            #x = rearrange(x, 'b n c -> b c n')
             # upsample sequence len downsampled by encoder blocks
             x = upsample(x)
             if mask is not None:
@@ -201,7 +194,6 @@ class Fuse(nn.Module):
         # cat on the feature dim
         fused_features = torch.cat(fused_features, dim=-2)
         fused_features = fused_features.permute(0, 2, 1)
-        #fused_features = rearrange(fused_features, 'b c n -> b n c')
 
         fused_features = self.fuse(fused_features)
         if mask is not None:
@@ -262,15 +254,12 @@ class MelDecoder(nn.Module):
 
         for convs, skip_norm in self.blocks:
             mel = skip.permute(0, 2, 1)
-            #mel = rearrange(skip, 'b n c -> b c n') 
            
             for conv, act, norm in convs:
                 x = act(conv(mel))
                 x = x.permute(0, 2, 1)
                 x = norm(x)
-                #x = norm(rearrange(x, 'b c n -> b n c'))
                 mel = x.permute(0, 2, 1) 
-                #mel = rearrange(x, 'b n c -> b c n')
 
             skip = skip_norm(x + skip)
 
