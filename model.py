@@ -81,6 +81,7 @@ class EfficientFSModule(LightningModule):
     def forward(self, x, train=False):
         return self.phoneme2mel(x, train=train)
 
+    #@torch.onnx.export
     def predict_step(self, batch, batch_idx):
         y = self.phoneme2mel(batch)
         mel = y["mel"]
