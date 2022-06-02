@@ -58,11 +58,6 @@ def preprocess_english(lexicon, g2p, text, preprocess_config):
 
 def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verbose=False):
     assert(args.text is not None)
-    #if args.use_jit:
-    #    phoneme2mel, hifigan = load_jit_modules(args)
-    #else:
-    #    assert(args.checkpoint is not None)
-    #    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
 
     if verbose:
         start_time = time.time()

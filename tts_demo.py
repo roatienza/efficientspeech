@@ -140,6 +140,16 @@ if __name__ == "__main__":
                                   decoder_kernel_size=args.decoder_kernel_size,
                                   expansion=args.expansion, wav_path=args.out_folder,
                                   infer_device=args.infer_device)
+    if "onnx" in args.checkpoint:
+        #pl_module.load_from_onnx(args.checkpoint)
+
+        import onnxruntime
+
+        ort_session = onnxruntime.InferenceSession(args.checkpoint)
+        input_name = ort_session.get_inputs()[0].name
+        #ort_inputs = {input_name: np.random.randn(1, 64)}
+        #ort_outs = ort_session.run(None, ort_inputs)
+
     phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
     if args.onnx or args.jit:
         exit(0)
