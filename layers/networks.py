@@ -63,7 +63,6 @@ class Encoder(nn.Module):
             y, attn_mask = attn(x, mask=mask, pool=pool)
             x = norm(y + x)
             if attn_mask is not None:
-                print("attn mask", attn_mask.shape)
                 x = x.masked_fill(attn_mask, 0)
                 if decoder_mask is None:
                     decoder_mask = attn_mask
@@ -316,6 +315,7 @@ class PhonemeEncoder(nn.Module):
         max_mel_len = torch.max(mel_len).item() if train else None
 
         features, mask = self.encoder(phoneme, mask=phoneme_mask)
+        print("decoder mask", mask.shape)
         fused_features = self.fuse(features, mask=mask)
         
         pitch_pred = self.pitch_decoder(fused_features)
