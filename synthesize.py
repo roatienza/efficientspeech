@@ -122,7 +122,9 @@ def load_module(args, pl_module, preprocess_config):
         #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
         x = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
-        pl_module.to_onnx(args.onnx, x, export_params=True)
+        pl_module.to_onnx(args.onnx, x, export_params=True, verbose=True, input_names=["phoneme"], output_names=["wav"], 
+                            opset_version=9, do_constant_folding=True, fixed_batch_size=True, 
+                            dynamic_axes={"wav": {0: "batch_size"}, "phoneme": {0: "batch_size"}})
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
         #pl_module.to_jit()
