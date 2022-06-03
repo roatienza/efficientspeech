@@ -316,16 +316,20 @@ class PhonemeEncoder(nn.Module):
         
         pitch_pred = self.pitch_decoder(fused_features)
         pitch_features = self.pitch_decoder.get_embedding(pitch_pred, pitch_target, mask)
+        pitch_features = pitch_features.squeeze()
         if mask is not None:
-            pitch_features = pitch_features.squeeze()
             pitch_features = pitch_features.masked_fill(mask, 0)
+        else:
+            pitch_features = pitch_features.unsqueeze(0)
 
         
         energy_pred = self.energy_decoder(fused_features)
         energy_features = self.energy_decoder.get_embedding(energy_pred, energy_target, mask)
+        energy_features = energy_features.squeeze()
         if mask is not None:
-            energy_features = energy_features.squeeze()
             energy_features = energy_features.masked_fill(mask, 0)
+        else:
+            pitch_features = pitch_features.unsqueeze(0)
 
         duration_pred, duration_features = self.duration_decoder(fused_features)
         if mask is not None:
