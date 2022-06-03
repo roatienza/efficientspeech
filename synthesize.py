@@ -113,7 +113,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
     pl_module.eval()
 
     if args.onnx is not None:
-        phoneme = torch.randint(low=1, high=100, size=(1,128)).long()
+        phoneme = torch.randint(low=150, high=190, size=(1,128)).long()
         x = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
         #pl_module.to_onnx
