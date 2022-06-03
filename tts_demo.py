@@ -149,9 +149,9 @@ if __name__ == "__main__":
         input_name = ort_session.get_inputs()[0].name
         phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
         # random tensor of type bool
-        phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
-        x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
-        ort_inputs = {input_name: x}
+        #phoneme_mask = torch.zeros(1, 256)
+        #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
+        ort_inputs = {input_name: phoneme}
         ort_outs = ort_session.run(None, ort_inputs)
         print(ort_outs.keys())
         exit(0)
