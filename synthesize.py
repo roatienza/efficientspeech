@@ -122,7 +122,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           opset_version=11, do_constant_folding=True,
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
-                              "phoneme": [0,1,2],
+                              "phoneme": [0,1],
                               "wav" : [0,1,2]
                               #"wav": {1: "wav_length", 2: "wav_channels"},
                               })
