@@ -87,7 +87,7 @@ class EfficientFSModule(LightningModule):
         y = self.phoneme2mel(batch, train=False)
         mel = y["mel"]
         mel = mel.transpose(1, 2)
-        wav = self.hifigan(mel) #.squeeze(1)
+        wav = self.hifigan(mel).squeeze(1)
         return wav
 
     def loss(self, y_hat, y, x):
