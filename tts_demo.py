@@ -164,6 +164,8 @@ if __name__ == "__main__":
         #ort_inputs = {input_name: phoneme}
         #phoneme = np.random.randint(low=1, high=100, size=(1, 1024))
         phoneme = np.array([preprocess_english(lexicon, g2p, "tara na nakain na tayo", preprocess_config)])
+        phoneme = np.pad(phoneme, ((0, 0), (0, 128 - phoneme.shape[1])), mode='constant', constant_values=0)
+        print("Phoneme shape", phoneme.shape)
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
         wavs = ort_session.run(None, ort_inputs)[0]

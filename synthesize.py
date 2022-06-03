@@ -114,7 +114,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
 
     if args.onnx is not None:
         # random tensor of type int64
-        phoneme = torch.randint(low=1, high=100, size=(1,1024)).long()
+        phoneme = torch.randint(low=1, high=100, size=(1,128)).long()
         
         # random tensor of type bool
         #phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
@@ -132,8 +132,8 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           opset_version=11, do_constant_folding=True,
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
-                              "phoneme": {0: "batch", 1: "sequence_len"},
-                              "wav": {0: "batch", 1: "outputs_len"},
+                              "phoneme": {1: "phoneme_length"},
+                              "wav": {1: "wav_length"},
                               })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
