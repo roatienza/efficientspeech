@@ -148,7 +148,7 @@ if __name__ == "__main__":
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
         input_name = ort_session.get_inputs()[0].name
         #phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
-        phoneme = np.random.randint(low=1, high=100, size=(1, 256))
+        phoneme = np.random.randint(low=1, high=100, size=(1, 56))
         # random tensor of type bool
         #phoneme_mask = torch.zeros(1, 256)
         x = {"phoneme": phoneme, }
