@@ -304,7 +304,7 @@ class PhonemeEncoder(nn.Module):
         self.duration_decoder = AcousticDecoder(dim, duration=True)
         
 
-    def forward(self, x, train=True):
+    def forward(self, x, train=False):
         phoneme = x["phoneme"]
         phoneme_mask = x["phoneme_mask"] if train else None
 
