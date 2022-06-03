@@ -211,9 +211,10 @@ class Fuse(nn.Module):
 class FeatureUpsampler(nn.Module):
     """ Upsample fused features using target or predicted duration"""
 
-    def __init__(self):
+    def __init__(self, max_len=256):
         super().__init__()
 
+        self.max_len = max_len
         self.len_regulator = LengthRegulator()
 
     def forward(self, fused_features, duration, max_mel_len, train=False):
@@ -223,7 +224,10 @@ class FeatureUpsampler(nn.Module):
         if train:
             features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
         else:
-            duration = duration.squeeze().long()[:fused_features.shape[1]]
+            duration = duration.squeeze().long()
+            if duration.shape[0] < self.max_len:
+                # pad duration to max_len
+                duration = torch.cat([duration, torch.zeros(self.max_len - duration.shape[0], dtype=duration.dtype, device=duration.device)])
             features = fused_features.repeat_interleave(duration, dim=1)
             len_pred = [features.shape[1]]
             len_pred = torch.LongTensor(len_pred).to(features.device)
