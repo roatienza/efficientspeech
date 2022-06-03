@@ -223,7 +223,8 @@ class FeatureUpsampler(nn.Module):
         if train:
             features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
         else:
-            features = fused_features.repeat_interleave(duration.squeeze().long(), dim=1)
+            duration = duration.squeeze().long()[:fused_features.shape[1]]
+            features = fused_features.repeat_interleave(duration, dim=1)
             len_pred = [features.shape[1]]
             len_pred = torch.LongTensor(len_pred).to(features.device)
         
