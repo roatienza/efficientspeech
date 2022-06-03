@@ -329,7 +329,7 @@ class PhonemeEncoder(nn.Module):
         if mask is not None:
             energy_features = energy_features.masked_fill(mask, 0)
         else:
-            pitch_features = pitch_features.unsqueeze(0)
+            energy_features = energy_features.unsqueeze(0)
 
         duration_pred, duration_features = self.duration_decoder(fused_features)
         if mask is not None:
