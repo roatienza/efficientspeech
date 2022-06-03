@@ -123,7 +123,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
                               "phoneme": [0,1],
-                              "wav" : [0,1,2,3,4]
+                              "wav" : [0,1,2,3,4,5,6,]
                               #"wav": {1: "wav_length", 2: "wav_channels"},
                               })
     elif args.jit is not None:
