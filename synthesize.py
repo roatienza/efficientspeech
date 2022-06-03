@@ -120,6 +120,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
         pl_module.eval()
         with torch.no_grad():
             wav = pl_module(x)
+            print("Input shape: ", phoneme.shape)
             print("Output shape:", wav.shape)
         torch.onnx.export(pl_module, x, args.onnx, export_params=True,
                           opset_version=12, do_constant_folding=True,
