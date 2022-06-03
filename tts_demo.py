@@ -28,7 +28,7 @@ from queue import Queue
 from model import EfficientFSModule
 
 from utils.tools import get_args
-from synthesize import load_module, synthesize, get_lexicon_and_g2p, preprocess_english
+from synthesize import load_module, synthesize, get_lexicon_and_g2p, text2phoneme
 from scipy.io import wavfile
 
 
@@ -155,8 +155,8 @@ if __name__ == "__main__":
         onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
-        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo lupang hinirang, ini-ibig ko ang pilipinas. ito ang aking lupang sinilangan. susundin ko ang tuntunin ng aking paaralan.", preprocess_config)])
-        #phoneme = np.pad(phoneme, ((0, 0), (0, 128 - phoneme.shape[1])), mode='constant', constant_values=183)
+        phoneme = np.array([text2phoneme(lexicon, g2p, "tara na kumain na tayo.", preprocess_config)])
+        #phoneme = np.pad(phoneme, ((0, 0), (0, 128 - phoneme.shape[1])), mode='constant', constant_values=190)
         print("Phoneme shape", phoneme.shape)
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         

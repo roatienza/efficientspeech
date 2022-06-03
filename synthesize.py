@@ -27,7 +27,7 @@ def get_lexicon_and_g2p(preprocess_config):
     return lexicon, g2p
 
 
-def preprocess_english(lexicon, g2p, text, preprocess_config):
+def text2phoneme(lexicon, g2p, text, preprocess_config):
     text = text.rstrip(punctuation)
 
     lang = preprocess_config["preprocessing"]["text"]["language"]
@@ -62,7 +62,7 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verb
     if verbose:
         start_time = time.time()
     
-    phoneme = np.array([preprocess_english(lexicon, g2p, args.text, preprocess_config)])
+    phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
     phoneme_len = np.array([len(phoneme[0])])
 
     phoneme = torch.from_numpy(phoneme).long()  
@@ -122,7 +122,8 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           opset_version=11, do_constant_folding=True,
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
-                              "phoneme": {1: "phoneme_length"},
+                              "phoneme": [0,1,2],
+                              "wav" : [0,1,2]
                               #"wav": {1: "wav_length", 2: "wav_channels"},
                               })
     elif args.jit is not None:
