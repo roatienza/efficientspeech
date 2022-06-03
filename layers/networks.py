@@ -63,6 +63,7 @@ class Encoder(nn.Module):
             y, attn_mask = attn(x, mask=mask, pool=pool)
             x = norm(y + x)
             if attn_mask is not None:
+                print("attn mask", attn_mask.shape)
                 x = x.masked_fill(attn_mask, 0)
                 if decoder_mask is None:
                     decoder_mask = attn_mask
