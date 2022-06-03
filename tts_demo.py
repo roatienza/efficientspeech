@@ -150,7 +150,7 @@ if __name__ == "__main__":
         phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
         # random tensor of type bool
         #phoneme_mask = torch.zeros(1, 256)
-        #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
+        x = {"phoneme": phoneme, }
         ort_inputs = {input_name: phoneme}
         ort_outs = ort_session.run(None, ort_inputs)
         print(ort_outs.keys())
