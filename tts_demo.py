@@ -155,24 +155,12 @@ if __name__ == "__main__":
         onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
-        #input_name = ort_session.get_inputs()[0].name
-        #phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
-        
-        # random tensor of type bool
-        #phoneme_mask = torch.zeros(1, 256)
-        #x = {"phoneme": phoneme, }
-        #ort_inputs = {input_name: phoneme}
-        #phoneme = np.random.randint(low=1, high=100, size=(1, 1024))
-        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na nakain na tayo lupang hinirang, ini-ibig ko ang pilipinas. ito ang aking lupang sinilangan. susundin ko ang tuntunin ng aking paaralan. sila", preprocess_config)])
-        #print("Last:", phoneme[0][-1])
+        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo lupang hinirang, ini-ibig ko ang pilipinas. ito ang aking lupang sinilangan. susundin ko ang tuntunin ng aking paaralan.", preprocess_config)])
         #phoneme = np.pad(phoneme, ((0, 0), (0, 128 - phoneme.shape[1])), mode='constant', constant_values=183)
         print("Phoneme shape", phoneme.shape)
-        print("Max", phoneme.max())
-        print("Min", phoneme.min())
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
         wavs = ort_session.run(None, ort_inputs)[0]
-        print(wavs.shape)
         wavs = (
             wavs * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
             ).astype("int16")
