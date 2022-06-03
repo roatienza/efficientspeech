@@ -115,6 +115,7 @@ def load_module(args, pl_module, preprocess_config):
     if args.onnx is not None:
         # random tensor of type int64
         phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
+        
         # random tensor of type bool
         #phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
         #phoneme_mask = torch.ones(1,256)
