@@ -117,7 +117,8 @@ def load_module(args, pl_module, preprocess_config):
         phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
         # random tensor of type bool
         #phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
-        x = {"phoneme": phoneme, "phoneme_mask": None}
+        phoneme_mask = torch.ones(1,256)
+        x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
         print("Converting to ONNX ...", args.onnx)
         pl_module.to_onnx(args.onnx, x, export_params=True)
     elif args.jit is not None:

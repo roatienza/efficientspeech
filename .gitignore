@@ -138,3 +138,4 @@ lightning_logs
 *.DS_Store
 LJ_V3/
 LJ_FT_T2_V2/
+*.onnx
