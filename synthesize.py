@@ -124,7 +124,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
             print("Input shape: ", phoneme.shape)
             print("Output shape:", wav.shape)
         # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
-        torch.onnx.export(pl_module, x, args.onnx, export_params=True,
+            torch.onnx.export(pl_module, x, args.onnx, export_params=True,
                           opset_version=12, do_constant_folding=True, verbose=True,
                           input_names=["inputs"], output_names=["outputs"],
                           dynamic_axes={
