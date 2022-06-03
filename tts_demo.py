@@ -28,8 +28,9 @@ from queue import Queue
 from model import EfficientFSModule
 
 from utils.tools import get_args
-from synthesize import load_module, synthesize, get_lexicon_and_g2p
+from synthesize import load_module, synthesize, get_lexicon_and_g2p, preprocess_english
 from scipy.io import wavfile
+
 
 def audio_callback(outdata, frames, time, status):
     #global g_chunk
@@ -142,6 +143,7 @@ if __name__ == "__main__":
                                   infer_device=args.infer_device)
 
     lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
+    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
 
     if "onnx" in args.checkpoint:
         #pl_module.load_from_onnx(args.checkpoint)
@@ -160,14 +162,19 @@ if __name__ == "__main__":
         #phoneme_mask = torch.zeros(1, 256)
         #x = {"phoneme": phoneme, }
         #ort_inputs = {input_name: phoneme}
-        phoneme = np.random.randint(low=1, high=100, size=(1, 512))
+        #phoneme = np.random.randint(low=1, high=100, size=(1, 1024))
+        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na nakain na tayo", preprocess_config)])
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
-        ort_outs = ort_session.run(None, ort_inputs)
-        for x in ort_outs:
-            print(x.shape)
-            print(x.dtype)
-            print(x[0])
+        wavs = ort_session.run(None, ort_inputs)[0]
+        print(wavs.shape)
+        wavs = (
+            wavs * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
+            ).astype("int16")
+        wavs = [wav for wav in wavs]
+        for wav in wavs:
+            wavfile.write("output.wav", sampling_rate, wav)
+
         exit(0)
         #ort_inputs = {input_name: np.random.randn(1, 64)}
         #ort_outs = ort_session.run(None, ort_inputs)
@@ -228,7 +235,7 @@ if __name__ == "__main__":
     #                       args.chunk_len_in_secs, args.context_len_in_secs, 
     #                       stride=stride)
     #asr_thread.start()
-    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    
     
     sd.default.reset()
     sd.default.samplerate = sampling_rate

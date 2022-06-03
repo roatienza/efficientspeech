@@ -114,15 +114,15 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
 
     if args.onnx is not None:
         # random tensor of type int64
-        #phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
+        phoneme = torch.randint(low=1, high=100, size=(1,1024)).long()
         
         # random tensor of type bool
         #phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
         #phoneme_mask = torch.ones(1,256)
         #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
 
-        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo", preprocess_config)])
-        phoneme = torch.from_numpy(phoneme).long()  
+        #phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo", preprocess_config)])
+        #phoneme = torch.from_numpy(phoneme).long()  
         #print("Phoneme shape", phoneme.shape)
         x = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
@@ -133,8 +133,8 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
                               "phoneme": {0: "batch", 1: "sequence_len"},
-                              "wav": {0: "batch", 1: "sequence_len"},
-                          })
+                              "wav": {0: "batch", 1: "outputs_len"},
+                              })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
         #pl_module.to_jit()
