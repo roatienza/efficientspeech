@@ -225,15 +225,15 @@ class FeatureUpsampler(nn.Module):
             features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
         else:
             duration = duration.squeeze().long()
-            if duration.shape[0] < self.max_len:
+            #if duration.shape[0] < self.max_len:
                 # pad duration to max_len
-                duration = torch.cat([duration, torch.zeros(self.max_len - duration.shape[0], dtype=duration.dtype, device=duration.device)])
+            duration = torch.cat([duration, torch.zeros(self.max_len - duration.shape[0], dtype=duration.dtype, device=duration.device)])
                 #print("duration shape", duration.shape)
                 # pad fused_features to max_len
                 #print("fused_features shape", fused_features.shape)
-                zeros = torch.zeros(fused_features.shape[0], self.max_len - fused_features.shape[1], fused_features.shape[2], dtype=fused_features.dtype, device=fused_features.device)
+            zeros = torch.zeros(fused_features.shape[0], self.max_len - fused_features.shape[1], fused_features.shape[2], dtype=fused_features.dtype, device=fused_features.device)
                 #print("zeros shape", zeros.shape)
-                fused_features = torch.cat([fused_features, zeros], dim=1)
+            fused_features = torch.cat([fused_features, zeros], dim=1)
                 #print("fused_features new shape", fused_features.shape)
             features = fused_features.repeat_interleave(duration, dim=1)
             len_pred = [features.shape[1]]
