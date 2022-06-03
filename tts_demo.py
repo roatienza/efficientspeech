@@ -157,7 +157,7 @@ if __name__ == "__main__":
         #phoneme_mask = torch.zeros(1, 256)
         #x = {"phoneme": phoneme, }
         #ort_inputs = {input_name: phoneme}
-        phoneme = np.random.randint(low=1, high=100, size=(1, 256))
+        phoneme = np.random.randint(low=1, high=100, size=(1, 56))
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
         ort_outs = ort_session.run(None, ort_inputs)

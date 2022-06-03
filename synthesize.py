@@ -127,7 +127,7 @@ def load_module(args, pl_module, preprocess_config):
         torch.onnx.export(pl_module, x, args.onnx, export_params=True, 
                           opset_version=10, do_constant_folding=True, 
                           input_names=["phoneme"], output_names=["wav"],
-                          dynamic_axes={"wav": {0: "batch"}, "phoneme": {0: "batch"}})
+                          dynamic_axes={"wav": {1: "sequence_length"}, "phoneme": {1: "sequence_length"}})
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
         #pl_module.to_jit()
