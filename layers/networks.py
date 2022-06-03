@@ -190,7 +190,7 @@ class Fuse(nn.Module):
             if mask is not None:
                 print("Mask", mask.shape)
                 x = x[:,:,:mask.shape[1]]
-            elif len(fused_features) > 1:
+            elif len(fused_features) > 0:
                 print("fake mask len", fused_features[0].shape[-1])
                 x = x[:,:,:fused_features[0].shape[-1]] 
 
