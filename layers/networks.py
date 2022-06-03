@@ -185,7 +185,10 @@ class Fuse(nn.Module):
             x = x.permute(0, 2, 1)
             # upsample sequence len downsampled by encoder blocks
             x = upsample(x)
+            
+            print("x.shape:", x.shape)
             if mask is not None:
+                print("Mask", mask.shape)
                 x = x[:,:,:mask.shape[1]]
             elif len(fused_features) > 1:
                 x = x[:,:fused_features[0].shape[-2],:fused_features[0].shape[-1]] 
