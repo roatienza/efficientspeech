@@ -303,7 +303,7 @@ class PhonemeEncoder(nn.Module):
 
     def forward(self, x, train=False):
         phoneme = x["phoneme"]
-        phoneme_mask = x["phoneme_mask"] #if train else None
+        phoneme_mask = x["phoneme_mask"] if train else None
 
         pitch_target = x["pitch"] if train else None
         energy_target = x["energy"] if train  else None
@@ -340,7 +340,9 @@ class PhonemeEncoder(nn.Module):
             duration_target = torch.round(duration_pred).squeeze()
         if phoneme_mask is not None:
             duration_target = duration_target.masked_fill(phoneme_mask, 0)
-
+        else:
+            duration_target = duration_target.unsqueeze(0)
+            
         print("Fused features", fused_features.shape)
         print("Duration target", duration_target.shape)
         features, mel_len_pred = self.feature_upsampler(fused_features,
