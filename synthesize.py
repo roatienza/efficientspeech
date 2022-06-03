@@ -128,8 +128,8 @@ def load_module(args, pl_module, preprocess_config):
                           opset_version=10, do_constant_folding=True, 
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
-                              "phoneme": {0: "batch", 1: "sequence", 2: "features", 3: "time", 4: "freq", 5: "channel", 6: "sequence_len"},
-                              "wav": {0: "batch", 1: "sequence", 2: "features", 3: "time", 4: "freq", 5: "channel",6: "sequence_len"},
+                              "phoneme": {0: "batch", 1: "sequence", 2: "sequence_len"},
+                              "wav": {0: "batch", 1: "sequence", 2: "sequence_len"},
                               #"phoneme": {0: "" 1: "sequence_length"}
                               #"wav": {1: "sequence_length"}, 
                               })
