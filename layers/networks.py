@@ -186,12 +186,9 @@ class Fuse(nn.Module):
             # upsample sequence len downsampled by encoder blocks
             x = upsample(x)
             
-            print("x.shape:", x.shape)
             if mask is not None:
-                print("Mask", mask.shape)
                 x = x[:,:,:mask.shape[1]]
             elif len(fused_features) > 0:
-                print("fake mask len", fused_features[0].shape[-1])
                 x = x[:,:,:fused_features[0].shape[-1]] 
 
             fused_features.append(x)
@@ -335,6 +332,11 @@ class PhonemeEncoder(nn.Module):
         if mask is not None:
             duration_features = duration_features.masked_fill(mask, 0)
        
+        print("Fused features:", fused_features.size())
+        print("Duration:", duration_features.size())
+        print("Pitch:", pitch_features.size())
+        print("Energy:", energy_features.size())
+
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
         
         if duration_target is None:
