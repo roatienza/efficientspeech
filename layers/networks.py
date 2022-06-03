@@ -322,7 +322,6 @@ class PhonemeEncoder(nn.Module):
         else:
             pitch_features = pitch_features.unsqueeze(0)
 
-        
         energy_pred = self.energy_decoder(fused_features)
         energy_features = self.energy_decoder.get_embedding(energy_pred, energy_target, mask)
         energy_features = energy_features.squeeze()
@@ -335,11 +334,6 @@ class PhonemeEncoder(nn.Module):
         if mask is not None:
             duration_features = duration_features.masked_fill(mask, 0)
        
-        print("Fused features:", fused_features.size())
-        print("Duration:", duration_features.size())
-        print("Pitch:", pitch_features.size())
-        print("Energy:", energy_features.size())
-
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
         
         if duration_target is None:
@@ -347,6 +341,8 @@ class PhonemeEncoder(nn.Module):
         if phoneme_mask is not None:
             duration_target = duration_target.masked_fill(phoneme_mask, 0)
 
+        print("Fused features", fused_features.shape)
+        print("Duration target", duration_target.shape)
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
                                                         max_mel_len=max_mel_len)
