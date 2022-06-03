@@ -188,7 +188,7 @@ class Fuse(nn.Module):
             if mask is not None:
                 x = x[:,:,:mask.shape[1]]
             elif len(fused_features) > 1:
-                x = x[:,:,:fused_features[0].shape[-1]] 
+                x = x[:,:fused_features[0].shape[-2],:fused_features[0].shape[-1]] 
 
             fused_features.append(x)
             #print(x.size())
