@@ -118,13 +118,12 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
         print("Converting to ONNX ...", args.onnx)
         #pl_module.to_onnx
         pl_module.eval()
-        torch.onnx.export(pl_module, x, args.onnx, export_params=True,
+        torch.onnx.export(pl_module, (x,), args.onnx, export_params=True,
                           opset_version=11, do_constant_folding=True,
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
-                              "phoneme": {0: "batch", 1: "phoneme"},
-                              "wav" : [0,1,2,3,4,5,6,7,]
-                              #"wav": {1: "wav_length", 2: "wav_channels"},
+                              "phoneme": {0: "batch_size", 1: "phoneme"},
+                              "wav" : {0: "batch_size", 1: "sequence", 7 : "wav"}
                               })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
