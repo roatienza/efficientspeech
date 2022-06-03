@@ -315,7 +315,6 @@ class PhonemeEncoder(nn.Module):
         max_mel_len = torch.max(mel_len).item() if train else None
 
         features, mask = self.encoder(phoneme, mask=phoneme_mask)
-        print("decoder mask", mask.shape)
         fused_features = self.fuse(features, mask=mask)
         
         pitch_pred = self.pitch_decoder(fused_features)
