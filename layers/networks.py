@@ -50,6 +50,7 @@ class Encoder(nn.Module):
         # (b, n, c)
         n = x.shape[-2]
         decoder_mask = None
+        pool = 1
 
         for merge3x3, merge1x1, attn, mixffn, norm in self.attn_blocks:
             # after each encoder block, merge features
@@ -58,7 +59,9 @@ class Encoder(nn.Module):
             x = merge1x1(x)
             x = x.permute(0, 2, 1)
             # self-attention with skip connect
-            pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
+            if mask is not None:
+                pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
+            
             #pool = round(n / x.shape[-2])
             y, attn_mask = attn(x, mask=mask, pool=pool)
             x = norm(y + x)
@@ -342,7 +345,7 @@ class PhonemeEncoder(nn.Module):
             duration_target = duration_target.masked_fill(phoneme_mask, 0)
         else:
             duration_target = duration_target.unsqueeze(0)
-            
+
         print("Fused features", fused_features.shape)
         print("Duration target", duration_target.shape)
         features, mel_len_pred = self.feature_upsampler(fused_features,
