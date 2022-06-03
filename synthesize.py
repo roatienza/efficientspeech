@@ -98,7 +98,7 @@ def load_jit_modules(args):
     hifigan = torch.jit.load(hifigan_ckpt)
     return phoneme2mel, hifigan
 
-def load_module(args, pl_module, preprocess_config):
+def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
     print("Loading model checkpoint ...", args.checkpoint)
     pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                                lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -114,12 +114,14 @@ def load_module(args, pl_module, preprocess_config):
 
     if args.onnx is not None:
         # random tensor of type int64
-        phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
+        #phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
         
         # random tensor of type bool
         #phoneme_mask = torch.randint(low=0, high=2, size=(1,256)).bool()
         #phoneme_mask = torch.ones(1,256)
         #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
+
+        phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo", preprocess_config)])
         x = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
         #pl_module.to_onnx
@@ -129,7 +131,7 @@ def load_module(args, pl_module, preprocess_config):
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
                               "phoneme": {0: "batch", 1: "sequence_len"},
-                              #"wav": {0: "batch", 1: "sequence_len"},
+                              "wav": {0: "batch", 1: "sequence_len"},
                           })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
