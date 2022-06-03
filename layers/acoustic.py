@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-#import math
+import math
 
 from utils.tools import pad
 
@@ -34,7 +34,7 @@ class LengthRegulator(nn.Module):
 
         for i, vec in enumerate(batch):
             expand_size = predicted[i].item() if i < predicted.shape[0] else 0
-            #expand_size = 1 if math.isnan(expand_size) else expand_size 
+            expand_size = 1 if math.isnan(expand_size) else expand_size 
             out.append(vec.expand(max(int(expand_size), 0), -1))
         out = torch.cat(out, 0)
 

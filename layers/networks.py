@@ -346,8 +346,6 @@ class PhonemeEncoder(nn.Module):
         else:
             duration_target = duration_target.unsqueeze(0)
 
-        print("Fused features", fused_features.shape)
-        print("Duration target", duration_target.shape)
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
                                                         max_mel_len=max_mel_len)
