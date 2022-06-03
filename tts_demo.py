@@ -144,15 +144,21 @@ if __name__ == "__main__":
         #pl_module.load_from_onnx(args.checkpoint)
 
         import onnxruntime
+        import onnx
+
+        onnx_model = onnx.load(args.checkpoint)
+        onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
-        input_name = ort_session.get_inputs()[0].name
+        #input_name = ort_session.get_inputs()[0].name
         #phoneme = torch.randint(low=1, high=10, size=(1,256)).long()
-        phoneme = np.random.randint(low=1, high=100, size=(1, 56))
+        
         # random tensor of type bool
         #phoneme_mask = torch.zeros(1, 256)
-        x = {"phoneme": phoneme, }
-        ort_inputs = {input_name: phoneme}
+        #x = {"phoneme": phoneme, }
+        #ort_inputs = {input_name: phoneme}
+        phoneme = np.random.randint(low=1, high=100, size=(1, 256))
+        ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
         ort_outs = ort_session.run(None, ort_inputs)
         for x in ort_outs:
