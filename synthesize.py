@@ -122,7 +122,8 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
         #x = {"phoneme": phoneme, "phoneme_mask": phoneme_mask}
 
         phoneme = np.array([preprocess_english(lexicon, g2p, "tara na kumain na tayo", preprocess_config)])
-        print("Phoneme shape", phoneme.shape)
+        phoneme = torch.from_numpy(phoneme).long()  
+        #print("Phoneme shape", phoneme.shape)
         x = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
         #pl_module.to_onnx
