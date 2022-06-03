@@ -123,7 +123,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           input_names=["inputs"], output_names=["outputs"],
                           dynamic_axes={
                               "inputs": {0: "batch_size", 1: "phoneme"},
-                              "outputs": [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                              "outputs": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
                               #"wav" : {0: "batch_size", 1: "sequence", 7 : "wav"}
                               })
     elif args.jit is not None:
