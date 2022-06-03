@@ -119,7 +119,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
         #pl_module.to_onnx
         pl_module.eval()
         torch.onnx.export(pl_module, x, args.onnx, export_params=True,
-                          opset_version=11, do_constant_folding=True,
+                          opset_version=12, do_constant_folding=True,
                           input_names=["inputs"], output_names=["outputs"],
                           dynamic_axes={
                               "inputs": {0: "batch_size", 1: "phoneme"},
