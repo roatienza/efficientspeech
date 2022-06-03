@@ -123,7 +123,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                           input_names=["phoneme"], output_names=["wav"],
                           dynamic_axes={
                               "phoneme": {1: "phoneme_length"},
-                              "wav": {1: "wav_length", 2: "wav_channels"}},
+                              "wav": {1: "wav_length", 2: "wav_channels"},
                               })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
