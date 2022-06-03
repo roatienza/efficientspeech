@@ -216,12 +216,17 @@ class FeatureUpsampler(nn.Module):
 
         self.len_regulator = LengthRegulator()
 
-    def forward(self, fused_features, duration, max_mel_len):
+    def forward(self, fused_features, duration, max_mel_len, train=False):
 
         # expand features to max_mel_len dim
         # len_regulator operates on n or sequence len dim
-        features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
-
+        if train:
+            features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
+        else:
+            features = fused_features.repeat_interleave(duration.squeeze().long(), dim=1)
+            len_pred = [features.shape[1]]
+            len_pred = torch.LongTensor(len_pred).to(features.device)
+        
         return features, len_pred
 
 
@@ -348,7 +353,8 @@ class PhonemeEncoder(nn.Module):
 
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
-                                                        max_mel_len=max_mel_len)
+                                                        max_mel_len=max_mel_len,
+                                                        train=train)
         y = {"pitch": pitch_pred,
              "energy": energy_pred,
              "duration": duration_pred,
