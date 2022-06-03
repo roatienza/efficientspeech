@@ -227,7 +227,7 @@ class FeatureUpsampler(nn.Module):
             duration = duration.squeeze().long()
             #if duration.shape[0] < self.max_len:
                 # pad duration to max_len
-            duration = torch.cat([duration, torch.zeros(self.max_len - duration.shape[0], dtype=duration.dtype, device=duration.device)])
+            duration = torch.cat([duration, torch.ones(self.max_len - duration.shape[0], dtype=duration.dtype, device=duration.device)])
                 #print("duration shape", duration.shape)
                 # pad fused_features to max_len
                 #print("fused_features shape", fused_features.shape)
