@@ -149,10 +149,10 @@ if __name__ == "__main__":
         #pl_module.load_from_onnx(args.checkpoint)
 
         import onnxruntime
-        import onnx
+        #import onnx
 
-        onnx_model = onnx.load(args.checkpoint)
-        onnx.checker.check_model(onnx_model)
+        #onnx_model = onnx.load(args.checkpoint)
+        #onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
         phoneme = np.array([text2phoneme(lexicon, g2p, "tara na, kumain na tayo.", preprocess_config)])
