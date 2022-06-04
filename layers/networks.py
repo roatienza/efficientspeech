@@ -366,16 +366,13 @@ class PhonemeEncoder(nn.Module):
         features, mel_len_pred = self.feature_upsampler(fused_features,
                                                         duration=duration_target,
                                                         max_mel_len=max_mel_len,
-                                                        train=train)
-        if train:                                            
-            y = {"pitch": pitch_pred,
+                                                        train=train)                                          
+        y = {"pitch": pitch_pred,
                  "energy": energy_pred,
                 "duration": duration_pred,
                 "mel_len": mel_len_pred,
                 "features": features,
                 "mask": mask, }
-        else:
-            y = features
 
         return y
 
@@ -395,5 +392,10 @@ class Phoneme2Mel(nn.Module):
         pred = self.encoder(x, train=train)
         mel_pred = self.decoder(pred["features"], pred["mask"]) 
         pred["mel"] = mel_pred
+
+        if train:
+            return pred
+        else:
+            return mel_pred
         
-        return pred
+        #return pred
