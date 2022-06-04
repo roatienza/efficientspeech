@@ -371,22 +371,10 @@ def get_args():
                         default=2.,
                         help='Energy Loss weight')
 
-    # use jit modules
-    parser.add_argument('--use-jit',
-                        action='store_true',
-                        help='Use JIT modules')
-    
+    # use jit modules 
     parser.add_argument('--to-torchscript',
                         action='store_true',
                         help='Convert model to torchscript')
-    parser.add_argument("--phoneme2mel-jit",
-                        default="phoneme2mel_jit.pt",
-                        type=str,
-                        help="phoneme2mel checkpoint",)
-    parser.add_argument("--hifigan-jit",
-                        default="hifigan_jit.pt",
-                        type=str,
-                        help="hifigan checkpoint",)
 
     parser.add_argument("--hifigan-checkpoint",
                         default="hifigan/LJ_V2/generator_v2",

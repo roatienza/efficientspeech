@@ -149,14 +149,14 @@ if __name__ == "__main__":
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
         phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
-        #print(phoneme)
-        #phoneme = np.pad(phoneme, ((0, 0), (0, 64 - phoneme.shape[1])), mode='constant', constant_values=196)
+        print(phoneme)
+        phoneme = np.pad(phoneme, ((0, 0), (0, 64 - phoneme.shape[1])), mode='constant', constant_values=196)
         print("Phoneme shape", phoneme.shape)
         ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
         
         wavs = ort_session.run(None, ort_inputs)[0]
         print("wav shape", wavs.shape)
-        exit(0)
+
         wavs = (
             wavs * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
             ).astype("int16")

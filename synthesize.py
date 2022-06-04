@@ -93,6 +93,7 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verb
 
 
 def load_jit_modules(args):
+    import os
     phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
     hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
     phoneme2mel = torch.jit.load(phoneme2mel_ckpt)
@@ -123,7 +124,7 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
             wav = pl_module(x)
             print("Input shape: ", phoneme.shape)
             print("Output shape:", wav.shape)
-        # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
+            # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
             torch.onnx.export(pl_module, x, args.onnx, export_params=True,
                           opset_version=12, do_constant_folding=True, verbose=True,
                           input_names=["inputs"], output_names=["outputs"],

@@ -251,24 +251,23 @@ class MelDecoder(nn.Module):
         super().__init__()
 
         self.n_mel_channels = n_mel_channels
-        dim2 = min(4*dim, 256)
-        dim4 = 4*dim
+        dim_x2 = min(4*dim, 256)
+        dim_x4 = 4*dim
         padding = kernel_size // 2
   
-        self.fuse = nn.Sequential(nn.Linear(dim4, dim2),
-                                  #nn.Tanh(), 
-                                  nn.LayerNorm(dim2),)
+        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2),
+                                  nn.LayerNorm(dim_x2),)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
-                conv.append(nn.ModuleList([nn.Conv1d(dim2, dim2, kernel_size=kernel_size, padding=padding),
+                conv.append(nn.ModuleList([nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),
                             nn.Tanh(),
-                            nn.LayerNorm(dim2),]))
-            self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim2)]))
+                            nn.LayerNorm(dim_x2),]))
+            self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
     
-        self.mel_linear = nn.Linear(dim2, self.n_mel_channels)
+        self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
 
 
     def forward(self, features, mask=None):
@@ -368,11 +367,11 @@ class PhonemeEncoder(nn.Module):
                                                         max_mel_len=max_mel_len,
                                                         train=train)                                          
         y = {"pitch": pitch_pred,
-                 "energy": energy_pred,
-                "duration": duration_pred,
-                "mel_len": mel_len_pred,
-                "features": features,
-                "mask": mask, }
+             "energy": energy_pred,
+             "duration": duration_pred,
+             "mel_len": mel_len_pred,
+             "features": features,
+             "mask": mask, }
 
         return y
 
@@ -393,9 +392,5 @@ class Phoneme2Mel(nn.Module):
         mel_pred = self.decoder(pred["features"], pred["mask"]) 
         pred["mel"] = mel_pred
 
-        if train:
-            return pred
-        else:
-            return mel_pred
-        
-        #return pred
+        return pred if train else mel_pred
+
