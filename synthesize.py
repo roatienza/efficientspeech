@@ -125,11 +125,11 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
             print("Output shape:", wav.shape)
         # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
             torch.onnx.export(pl_module, x, args.onnx, export_params=True,
-                          opset_version=14, do_constant_folding=True, verbose=True,
+                          opset_version=12, do_constant_folding=True, verbose=True,
                           input_names=["inputs"], output_names=["outputs"],
                           dynamic_axes={
-                              "inputs": {0: "batch_size", 1: "phoneme"},
-                              "outputs": {0: "batch_size", 1: "wav"}
+                              "inputs": {1: "phoneme"},
+                              "outputs": {1: "wav"}
                               })
     elif args.jit is not None:
         print("Converting to JIT ...", args.jit)
