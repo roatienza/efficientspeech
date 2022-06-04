@@ -367,12 +367,15 @@ class PhonemeEncoder(nn.Module):
                                                         duration=duration_target,
                                                         max_mel_len=max_mel_len,
                                                         train=train)
-        y = {"pitch": pitch_pred,
-             "energy": energy_pred,
-             "duration": duration_pred,
-             "mel_len": mel_len_pred,
-             "features": features,
-             "mask": mask, }
+        if train:                                            
+            y = {"pitch": pitch_pred,
+                 "energy": energy_pred,
+                "duration": duration_pred,
+                "mel_len": mel_len_pred,
+                "features": features,
+                "mask": mask, }
+        else:
+            y = features
 
         return y
 

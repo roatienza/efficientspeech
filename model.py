@@ -79,7 +79,7 @@ class EfficientFSModule(LightningModule):
                                    infer_device=infer_device, verbose=verbose)
 
     def forward(self, x, train=False):
-        return self.phoneme2mel(x, train=train) if train else self.predict_step(x)
+        return self.phoneme2mel(x, train=train) # if train else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         y = self.phoneme2mel(batch, train=False)
