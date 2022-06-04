@@ -100,7 +100,7 @@ def load_jit_modules(args):
     hifigan = torch.jit.load(hifigan_ckpt)
     return phoneme2mel, hifigan
 
-def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
+def load_module(args, pl_module, preprocess_config):
     print("Loading model checkpoint ...", args.checkpoint)
     pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                                lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -113,31 +113,6 @@ def load_module(args, pl_module, preprocess_config, lexicon=None, g2p=None):
                                                infer_device=args.infer_device, 
                                                verbose=args.verbose)
     pl_module.eval()
-
-    if args.onnx is not None:
-        phoneme = torch.randint(low=150, high=190, size=(1,64)).long()
-        x = {"phoneme": phoneme, }
-        print("Converting to ONNX ...", args.onnx)
-        #pl_module.to_onnx
-        pl_module.eval()
-        with torch.no_grad():
-            wav = pl_module(x)
-            print("Input shape: ", phoneme.shape)
-            print("Output shape:", wav.shape)
-            # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
-            torch.onnx.export(pl_module, x, args.onnx, export_params=True,
-                          opset_version=12, do_constant_folding=True, verbose=True,
-                          input_names=["inputs"], output_names=["outputs"],
-                          dynamic_axes={
-                              "inputs": {1: "phoneme"},
-                              "outputs": {1: "wav"}
-                              })
-    elif args.jit is not None:
-        print("Converting to JIT ...", args.jit)
-        #pl_module.to_jit()
-        script = pl_module.to_torchscript()
-        torch.jit.save(script, args.jit)
-
     
     phoneme2mel = pl_module.phoneme2mel
     pl_module.hifigan.eval()

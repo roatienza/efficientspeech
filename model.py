@@ -78,12 +78,11 @@ class EfficientFSModule(LightningModule):
         self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint,
                                    infer_device=infer_device, verbose=verbose)
 
-    def forward(self, x, train=False):
-        return self.phoneme2mel(x, train=train) if train else self.predict_step(x)
+    def forward(self, x, train=True):
+        return self.phoneme2mel(x, train=train) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         mel = self.phoneme2mel(batch, train=False)
-        #mel = y["mel"]
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
         return wav
