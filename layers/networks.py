@@ -388,7 +388,7 @@ class Phoneme2Mel(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, x, train=True):
+    def forward(self, x, train=False):
         pred = self.encoder(x, train=train)
         mel_pred = self.decoder(pred["features"], pred["mask"]) 
         pred["mel"] = mel_pred
