@@ -108,7 +108,8 @@ if __name__ == "__main__":
             current_frame = 0
             args.text = multiline.get()
             start_time = time.time()
-            args.text = args.text.trim()
+            # remove start and end spaces from text
+            args.text = args.text.strip()
             if args.text[-1] == ".":
                 args.text = args.text[:-1]
             args.text += ". "
@@ -121,11 +122,6 @@ if __name__ == "__main__":
                 phoneme = np.concatenate(phoneme, axis=1)
                 phoneme = phoneme[:, :args.onnx_insize]
                 
-                #if phoneme_len < args.onnx_insize:
-                #    phoneme = np.pad(phoneme, ((0, 0), (0, args.onnx_insize - phoneme.shape[1])), mode='constant', constant_values=196)
-                #elif phoneme_len > args.onnx_insize:
-                #    phoneme = phoneme[:, :args.onnx_insize]
-                
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
                 outputs = ort_session.run(None, ort_inputs)
                 wavs = outputs[0]
@@ -137,25 +133,21 @@ if __name__ == "__main__":
             else:
                 with torch.no_grad():
                     phoneme = torch.from_numpy(phoneme).long() 
-                    print("Phoneme", phoneme.shape) 
-                    wavs, duration = pl_module({"phoneme": phoneme})
-                    duration = duration.squeeze().round().long()
-                    phoneme = phoneme.repeat_interleave(duration, dim=1)
-                    print("Phoneme reshaped", phoneme.shape)
-                    print("Duration:", duration.shape)
+                    wavs, _ = pl_module({"phoneme": phoneme})
+                    #duration = duration.squeeze().round().long()
+                    #phoneme = phoneme.repeat_interleave(duration, dim=1)
                     wavs = wavs.cpu().numpy()
-                    print("Wav:", wavs.shape)
-                    print(duration)
-                    
-                    print("Phoneme", phoneme.shape)
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
+            if onnx:
+                elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
             message = f"Synthesis time: {elapsed_time:.2f} sec"
             wav_len = wav.shape[0] / sampling_rate
             message += f"\nVoice length: {wav_len:.2f} sec"
             real_time_factor = wav_len / elapsed_time
             message += f"\nReal time factor: {real_time_factor:.2f}"
+
             g_window['-TIME-'].update(message)
             g_window.refresh()
 
