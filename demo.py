@@ -40,30 +40,8 @@ if __name__ == "__main__":
         onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
-        #phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
-        #print(phoneme)
-        #phoneme = np.pad(phoneme, ((0, 0), (0, 64 - phoneme.shape[1])), mode='constant', constant_values=196)
-        #print("Phoneme shape", phoneme.shape)
-        #ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
-        
-        #wavs = ort_session.run(None, ort_inputs)[0]
-        #print("wav shape", wavs.shape)
-        #write_to_file(wavs, preprocess_config, args.wav_path)
-
-        #wavs = (
-        #    wavs * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
-        #    ).astype("int16")
-        #wavs = [wav for wav in wavs]
-        #for wav in wavs:
-        #    wavfile.write("output.wav", sampling_rate, wav)
-
         is_onnx = True
     else:
-        #pl_module = EfficientFSModule(preprocess_config=preprocess_config,)
-        #ort_inputs = {input_name: np.random.randn(1, 64)}
-        #ort_outs = ort_session.run(None, ort_inputs)
-
-    #args.wav_path = None
         pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
                                       warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                       depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
@@ -73,7 +51,6 @@ if __name__ == "__main__":
                                       expansion=args.expansion, wav_path=args.out_folder,
                                       infer_device=args.infer_device)
 
-    #phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config, lexicon=lexicon, g2p=g2p)
         pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                                    lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                                    depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
@@ -119,8 +96,6 @@ if __name__ == "__main__":
     g_window.BringToFront()
     g_window.Refresh()
     
-    #device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
     sd.default.reset()
     sd.default.samplerate = sampling_rate
     sd.default.channels = 1
@@ -138,8 +113,11 @@ if __name__ == "__main__":
             start_time = time.time()
             phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
             if is_onnx:
+                # onnx is 3.5x faster than pytorch models
                 if phoneme.shape[1] < 64:
                     phoneme = np.pad(phoneme, ((0, 0), (0, 64 - phoneme.shape[1])), mode='constant', constant_values=196)
+                elif phoneme.shape[1] > 64:
+                    phoneme = phoneme[:, :64]
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
                 wavs = ort_session.run(None, ort_inputs)[0]
             else:
@@ -161,7 +139,6 @@ if __name__ == "__main__":
             sd.play(wav)
             sd.wait()
             write_to_file(wavs, preprocess_config, args.wav_path)
-            #wavfile.write("output.wav", sampling_rate, wav)
 
         elif event == '-CLEAR-':
             multiline.update('')

@@ -22,7 +22,7 @@ if __name__ == "__main__":
     #                              expansion=args.expansion, wav_path=args.out_folder,
     #                              infer_device=args.infer_device)
 
-    pl_module = EfficientFSModule(preprocess_config=preprocess_config,)
+    pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
  
     pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                                lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
@@ -53,7 +53,8 @@ if __name__ == "__main__":
                                   "outputs": {1: "wav"}
                               })
     elif args.jit is not None:
-        print("Converting to JIT ...", args.jit)
-        #pl_module.to_jit()
-        script = pl_module.to_torchscript()
-        torch.jit.save(script, args.jit)
+        with torch.no_grad():
+            print("Converting to JIT ...", args.jit)
+            #pl_module.to_jit()
+            script = pl_module.to_torchscript()
+            torch.jit.save(script, args.jit)
