@@ -108,24 +108,32 @@ if __name__ == "__main__":
             current_frame = 0
             args.text = multiline.get()
             start_time = time.time()
+            args.text = args.text.trim()
+            if args.text[-1] == ".":
+                args.text = args.text[:-1]
+            args.text += ". "
             phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
             if is_onnx:
                 # onnx is 3.5x faster than pytorch models
                 phoneme_len = phoneme.shape[1]
-                if phoneme_len < args.onnx_insize:
-                    phoneme = np.pad(phoneme, ((0, 0), (0, args.onnx_insize - phoneme.shape[1])), mode='constant', constant_values=196)
-                elif phoneme_len > args.onnx_insize:
-                    phoneme = phoneme[:, :args.onnx_insize]
+                n_append = args.onnx_insize // phoneme_len 
+                phoneme = [phoneme] * (n_append + 1)
+                phoneme = np.concatenate(phoneme, axis=1)
+                phoneme = phoneme[:, :args.onnx_insize]
+                
+                #if phoneme_len < args.onnx_insize:
+                #    phoneme = np.pad(phoneme, ((0, 0), (0, args.onnx_insize - phoneme.shape[1])), mode='constant', constant_values=196)
+                #elif phoneme_len > args.onnx_insize:
+                #    phoneme = phoneme[:, :args.onnx_insize]
+                
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
                 outputs = ort_session.run(None, ort_inputs)
                 wavs = outputs[0]
-                print("wav", wav.shape)
                 duration = outputs[1]
-                print("duration", duration.shape)
+
+                orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len]))
                 hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
-                #phoneme = phoneme[:,:phoneme_len]
-                print(duration)
-            
+                wavs = wavs[:, :orig_duration * hop_len]            
             else:
                 with torch.no_grad():
                     phoneme = torch.from_numpy(phoneme).long() 

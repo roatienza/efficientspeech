@@ -426,7 +426,7 @@ def get_args():
                         help='convert to onnx model')
     parser.add_argument('--onnx-insize',
                         type=int,
-                        default=64,
+                        default=32,
                         help='max input size for the onnx model')
     parser.add_argument('--onnx-opset',
                         type=int,
