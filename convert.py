@@ -35,7 +35,7 @@ if __name__ == "__main__":
     pl_module.eval()
 
     if args.onnx is not None:
-        phoneme = torch.randint(low=150, high=196, size=(1,64)).long()
+        phoneme = torch.randint(low=150, high=196, size=(1,args.onnx_insize)).long()
         print("Input shape: ", phoneme.shape)
         sample_input = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
@@ -44,12 +44,12 @@ if __name__ == "__main__":
             # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
             # or use pl_module.to_onnx
             torch.onnx.export(pl_module, sample_input, args.onnx, export_params=True,
-                              opset_version=12, do_constant_folding=True, verbose=True,
-                              input_names=["inputs"], output_names=["outputs"],
-                              dynamic_axes={
-                                  "inputs": {1: "phoneme"},
-                                  "outputs": {1: "wav"}
-                              })
+                              opset_version=args.onnx_opset, do_constant_folding=True, verbose=True,
+                              input_names=["inputs"], output_names=["outputs"],)
+                              #dynamic_axes={
+                              #    "inputs": {1: "phoneme"},
+                              #    "outputs": {1: "wav"} #ideally, this works but repeat_interleave is fixed
+                              #})
     elif args.jit is not None:
         with torch.no_grad():
             print("Converting to JIT ...", args.jit)

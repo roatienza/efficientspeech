@@ -111,10 +111,11 @@ if __name__ == "__main__":
             phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
             if is_onnx:
                 # onnx is 3.5x faster than pytorch models
-                if phoneme.shape[1] < 64:
-                    phoneme = np.pad(phoneme, ((0, 0), (0, 64 - phoneme.shape[1])), mode='constant', constant_values=196)
-                elif phoneme.shape[1] > 64:
-                    phoneme = phoneme[:, :64]
+                phoneme_len = phoneme.shape[1]
+                if phoneme_len < args.onnx_insize:
+                    phoneme = np.pad(phoneme, ((0, 0), (0, args.onnx_insize - phoneme.shape[1])), mode='constant', constant_values=196)
+                elif phoneme_len > args.onnx_insize:
+                    phoneme = phoneme[:, :args.onnx_insize]
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
                 wavs = ort_session.run(None, ort_inputs)[0]
             else:
