@@ -6,10 +6,9 @@ import torch
 import torch.nn as nn
 
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
-from pytorch_lightning import LightningModule, Callback
-from torch.optim import Adam, AdamW
-#from pytorch_lightning.callbacks import ModelCheckpoint
-from utils.tools import synth_test_samples
+from pytorch_lightning import LightningModule
+from torch.optim import AdamW
+from utils.tools import write_to_file
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
@@ -161,16 +160,22 @@ class EfficientFSModule(LightningModule):
 
 
     def test_step(self, batch, batch_idx):
+        # TODO: use predict step for wav file generation
         if batch_idx==0 and (self.current_epoch%10==0 or self.current_epoch==self.max_epochs):
-            x, y = batch
-            y_hat = self.forward(x, train=False)
-            mel = y["mel"]
-            mel_pred = y_hat["mel"]
-            mel_len = x["mel_len"]
-            mel_pred_len = y_hat["mel_len"]
+            x, _ = batch
+            wavs = self.forward(x, train=False)
+            #phoneme = torch.from_numpy(phoneme).long()  
+            #wavs = pl_module({"phoneme": phoneme})
+            wavs = wavs.cpu().numpy()
+            write_to_file(wavs, self.preprocess_config, self.wav_path)
 
-            synth_test_samples(mel, mel_len, mel_pred, mel_pred_len, self.hifigan,
-                               self.preprocess_config, wav_path=self.wav_path)
+            #mel = y["mel"]
+            #mel_pred = y_hat["mel"]
+            #mel_len = x["mel_len"]
+            #mel_pred_len = y_hat["mel_len"]
+
+            #synth_test_samples(mel, mel_len, mel_pred, mel_pred_len, self.hifigan,
+            #                   self.preprocess_config, wav_path=self.wav_path)
 
 
     def test_epoch_end(self, outputs):

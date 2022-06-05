@@ -271,7 +271,7 @@ class MelDecoder(nn.Module):
 
 
     def forward(self, features, mask=None):
-
+        # TODO: Figure out how to use mask
         skip = self.fuse(features)
 
         for convs, skip_norm in self.blocks:

@@ -2,12 +2,16 @@
 EfficientSpeech Text to Speech (TTS) demo.
 
 To use microphone input with GUI interface, run:
-    python3 asr_demo.py 
+    (Tagalog)
+    ONNX:
+      python3 demo.py --checkpoint checkpoints/tiny_v2_tag_attn.onnx --preprocess-config config/isip-preprocess.yaml
+    Torch model:
+      python3 demo.py --checkpoint checkpoints/small_v2_tag_attn.ckpt --accelerator cpu --infer-device cpu --head 1 \
+          --reduction 2 --expansion 1 --kernel-size 3  --preprocess-config config/isip-preprocess.yaml
 
 Dependencies:
     pip3 install pysimplegui
     pip3 install sounddevice 
-    pip install Cython
 '''
 
 import torch
@@ -42,14 +46,7 @@ if __name__ == "__main__":
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
         is_onnx = True
     else:
-        pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
-                                      warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                      depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                      reduction=args.reduction, head=args.head,
-                                      embed_dim=args.embed_dim, kernel_size=args.kernel_size,
-                                      decoder_kernel_size=args.decoder_kernel_size,
-                                      expansion=args.expansion, wav_path=args.out_folder,
-                                      infer_device=args.infer_device)
+        pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
 
         pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
                                                    lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,

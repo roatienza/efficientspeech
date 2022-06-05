@@ -1,5 +1,12 @@
 '''
 Torch model to onnx or jit converter
+
+Conver a torch model:
+    (Tagalog)
+    ONNX:
+      python3 convert.py --checkpoint checkpoints/tiny_v2_tag_attn.ckpt --accelerator cpu --infer-device cpu \
+          --head 1 --reduction 4 --expansion 1 --kernel-size 3  --n-blocks 2 --preprocess-config config/isip-preprocess.yaml \
+          --onnx checkpoints/tiny_v2_tag_attn.onnx > log.txt
 '''
 
 import torch
@@ -12,15 +19,6 @@ if __name__ == "__main__":
     args = get_args()
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
-  
-    #pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
-    #                              warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-    #                              depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-    #                              reduction=args.reduction, head=args.head,
-    #                              embed_dim=args.embed_dim, kernel_size=args.kernel_size,
-    #                              decoder_kernel_size=args.decoder_kernel_size,
-    #                              expansion=args.expansion, wav_path=args.out_folder,
-    #                              infer_device=args.infer_device)
 
     pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
  
