@@ -117,12 +117,29 @@ if __name__ == "__main__":
                 elif phoneme_len > args.onnx_insize:
                     phoneme = phoneme[:, :args.onnx_insize]
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
-                wavs = ort_session.run(None, ort_inputs)[0]
+                outputs = ort_session.run(None, ort_inputs)
+                wavs = outputs[0]
+                print("wav", wav.shape)
+                duration = outputs[1]
+                print("duration", duration.shape)
+                hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
+                #phoneme = phoneme[:,:phoneme_len]
+                print(duration)
+            
             else:
                 with torch.no_grad():
-                    phoneme = torch.from_numpy(phoneme).long()  
-                    wavs = pl_module({"phoneme": phoneme})
+                    phoneme = torch.from_numpy(phoneme).long() 
+                    print("Phoneme", phoneme.shape) 
+                    wavs, duration = pl_module({"phoneme": phoneme})
+                    duration = duration.squeeze().round().long()
+                    phoneme = phoneme.repeat_interleave(duration, dim=1)
+                    print("Phoneme reshaped", phoneme.shape)
+                    print("Duration:", duration.shape)
                     wavs = wavs.cpu().numpy()
+                    print("Wav:", wavs.shape)
+                    print(duration)
+                    
+                    print("Phoneme", phoneme.shape)
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
