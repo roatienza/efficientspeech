@@ -77,8 +77,8 @@ class EfficientFSModule(LightningModule):
         self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint,
                                    infer_device=infer_device, verbose=verbose)
 
-    def forward(self, x, train=True):
-        return self.phoneme2mel(x, train=train) if self.training else self.predict_step(x)
+    def forward(self, x):
+        return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         mel, duration = self.phoneme2mel(batch, train=False)
@@ -87,7 +87,6 @@ class EfficientFSModule(LightningModule):
         return wav, duration
 
     def loss(self, y_hat, y, x):
-        
         pitch_pred = y_hat["pitch"]
         energy_pred = y_hat["energy"]
         duration_pred = y_hat["duration"]
@@ -134,7 +133,8 @@ class EfficientFSModule(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x, train=True)
+        y_hat = self.forward(x)
+
         mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y, x)
         loss = (10. * mel_loss) + (2. * pitch_loss) + \
             (2. * energy_loss) + duration_loss
@@ -163,7 +163,7 @@ class EfficientFSModule(LightningModule):
         # TODO: use predict step for wav file generation
         if batch_idx==0 and (self.current_epoch%10==0 or self.current_epoch==self.max_epochs):
             x, _ = batch
-            wavs, _ = self.forward(x, train=False)
+            wavs, _ = self.forward(x)
             #phoneme = torch.from_numpy(phoneme).long()  
             #wavs = pl_module({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
