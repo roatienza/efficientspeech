@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
-            if onnx:
+            if is_onnx:
                 elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
             message = f"Synthesis time: {elapsed_time:.2f} sec"
             wav_len = wav.shape[0] / sampling_rate

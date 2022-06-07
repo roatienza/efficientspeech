@@ -221,10 +221,27 @@ class FeatureUpsampler(nn.Module):
 
         # expand features to max_mel_len dim
         # len_regulator operates on n or sequence len dim
+        
         if train:
-            features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
+            # have to find the max duration in the dataset
+            #features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
+            mel_len = list()
+            output = list()
+            i = 0
+            for feature, repetition  in zip(fused_features, duration):
+                repetition = repetition.squeeze().long()
+                print("Rep", repetition.shape)
+                feature = feature.repeat_interleave(repetition, dim=0)
+                print("Feature", feature.shape)
+                print("Max mel len", max_mel_len)
+                i += 1
+                if i == 2:
+                    exit(0)
+                #feature = F.pad( torch.sum(repetition).item() 
+                #feature.masked_fill_(max_mel_len, 0)
         else:
             duration = duration.squeeze().long()
+            # have to find the max duration in the dataset
             features = fused_features.repeat_interleave(duration, dim=1)
             len_pred = [features.shape[1]]
             len_pred = torch.LongTensor(len_pred).to(features.device)
