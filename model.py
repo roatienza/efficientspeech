@@ -8,7 +8,7 @@ import torch.nn as nn
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
 from pytorch_lightning import LightningModule
 from torch.optim import AdamW
-from utils.tools import write_to_file
+from utils.tools import vocoder_infer, write_to_file
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
@@ -81,10 +81,10 @@ class EfficientFSModule(LightningModule):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        mel, duration = self.phoneme2mel(batch, train=False)
+        mel, duration, mel_len = self.phoneme2mel(batch, train=False)
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, duration
+        return wav, duration, mel_len
 
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
@@ -162,16 +162,21 @@ class EfficientFSModule(LightningModule):
     def test_step(self, batch, batch_idx):
         # TODO: use predict step for wav file generation
         if batch_idx==0 and (self.current_epoch%10==0 or self.current_epoch==self.max_epochs):
-            x, _ = batch
-            wavs, _ = self.forward(x)
-            #phoneme = torch.from_numpy(phoneme).long()  
-            #wavs = pl_module({"phoneme": phoneme})
+            x, y = batch
+            wavs, _, lengths = self.forward(x)
             wavs = wavs.cpu().numpy()
-            write_to_file(wavs, self.preprocess_config, self.wav_path)
+            write_to_file(wavs, self.preprocess_config, lengths=lengths, wav_path=self.wav_path, filename="prediction")
 
-            #mel = y["mel"]
-            #mel_pred = y_hat["mel"]
-            #mel_len = x["mel_len"]
+            old_file = os.path.join(self.wav_path, "reconstruction-0.wav")
+            if not os.path.isfile(old_file):
+                mel = y["mel"]
+                mel = mel.transpose(1, 2)
+                lengths = x["mel_len"]
+                with torch.no_grad():
+                    wavs = self.hifigan(mel).squeeze(1)
+                    wavs = wavs.cpu().numpy()
+                write_to_file(wavs, self.preprocess_config, lengths=lengths, wav_path=self.wav_path, filename="reconstruction")
+            
             #mel_pred_len = y_hat["mel_len"]
 
             #synth_test_samples(mel, mel_len, mel_pred, mel_pred_len, self.hifigan,

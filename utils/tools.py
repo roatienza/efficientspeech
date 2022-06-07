@@ -9,16 +9,21 @@ import numpy as np
 from scipy.io import wavfile
 from matplotlib import pyplot as plt
 
-def write_to_file(wavs, preprocess_config, wav_path="outputs"):
+def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", filename="tts"):
     wavs = (
             wavs * preprocess_config["preprocessing"]["audio"]["max_wav_value"]
             ).astype("int16")
     wavs = [wav for wav in wavs]
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    if lengths is not None:
+        lengths *= preprocess_config["preprocessing"]["stft"]["hop_length"]
+    for i in range(len(wavs)):
+        if lengths is not None:
+            wavs[i] = wavs[i][: lengths[i]]
     # create dir if not exists
     os.makedirs(wav_path, exist_ok=True)
     for i, wav in enumerate(wavs):
-        path = os.path.join(wav_path, "tts_{}.wav".format(i))
+        path = os.path.join(wav_path, "{}-{}.wav".format(filename, i))
         wavfile.write(path, sampling_rate, wav)
 
 def get_mask_from_lengths(lengths, max_len=None):

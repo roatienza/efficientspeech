@@ -211,63 +211,39 @@ class Fuse(nn.Module):
 class FeatureUpsampler(nn.Module):
     """ Upsample fused features using target or predicted duration"""
 
-    def __init__(self, max_len=256):
+    def __init__(self):
         super().__init__()
 
-        self.max_len = max_len
-        self.len_regulator = LengthRegulator()
+        #self.max_len = max_len
+        #self.len_regulator = LengthRegulator()
 
     def forward(self, fused_features, duration, max_mel_len, train=False):
+        mel_len = list()
+        features = list()
+        duration = duration.squeeze()
 
-        # expand features to max_mel_len dim
-        # len_regulator operates on n or sequence len dim
-        #features = fused_features 
-        #len_pred = [1]
-        if True:
-            # have to find the max duration in the dataset
-            #features, len_pred = self.len_regulator(fused_features, duration, max_mel_len)
-            mel_len = list()
-            features = list()
-            #i = 0
-            #print("Fused", fused_features.shape)
-            duration = duration.squeeze()
-            #print("Duration", duration.shape)
-            
-            for feature, repetition  in zip(fused_features, duration):
-                repetition = repetition.squeeze().long()
-                #print("Rep", repetition.shape)
-                #print("Feature", feature.shape)
-                feature = feature.repeat_interleave(repetition, dim=0)
-                
-                #print("Feature new", feature.shape)
-                #print("Max mel len", max_mel_len)
-                #print("shape len", len(feature.shape))
-                if max_mel_len is not None:
-                    feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)), "constant", 0.0)
-                
-                mel_len.append(feature.size(0))
-                #print("Feature new new", feature.shape)
-                features.append(feature)
-                #exit(0)
-                #feature = F.pad( torch.sum(repetition).item() 
-                #feature.masked_fill_(max_mel_len, 0)
-            if max_mel_len is None:
-                max_mel_len = max(mel_len)
-                #print("Max mel len", max_mel_len)
-                features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)), "constant", 0.0) for feature in features]
+        for feature, repetition in zip(fused_features, duration):
+            repetition = repetition.squeeze().long()
+            feature = feature.repeat_interleave(repetition, dim=0)
+            mel_len.append(feature.size(0))
+            if max_mel_len is not None:
+                feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)), "constant", 0.0)
+            features.append(feature)
 
-            features = torch.stack(features)
-            len_pred = torch.LongTensor(mel_len).to(features.device)
-            #print("Features", features.shape)
-            #print("Len pred", len_pred.shape)
-            #exit(0)
-        else:
-            duration = duration.squeeze().long()
+        if max_mel_len is None:
+            max_mel_len = max(mel_len)
+            features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)),
+                                  "constant", 0.0) for feature in features]
+
+        features = torch.stack(features)
+        len_pred = torch.LongTensor(mel_len).to(features.device)
+
+        #    duration = duration.squeeze().long()
             # have to find the max duration in the dataset
-            features = fused_features.repeat_interleave(duration, dim=1)
-            len_pred = [features.shape[1]]
-            len_pred = torch.LongTensor(len_pred).to(features.device)
-        
+        #    features = fused_features.repeat_interleave(duration, dim=1)
+        #    len_pred = [features.shape[1]]
+        #    len_pred = torch.LongTensor(len_pred).to(features.device)
+
         return features, len_pred
 
 
@@ -383,12 +359,6 @@ class PhonemeEncoder(nn.Module):
         if mask is not None:
             duration_features = duration_features.masked_fill(mask, 0)
        
-        #print("Pitch", pitch_features.shape)
-        #print("Energy", energy_features.shape)
-        #print("Duration", duration_features.shape)
-        #print("Fused", fused_features.shape)
-       
-        #exit(0)
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
         
         if duration_target is None:
@@ -430,6 +400,6 @@ class Phoneme2Mel(nn.Module):
 
         if train: 
             return pred
-        return mel, pred["duration"]
+        return mel, pred["duration"], pred["mel_len"]
         #return pred if train else mel, pred["duration"]
 
