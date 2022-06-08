@@ -212,29 +212,32 @@ class FeatureUpsampler(nn.Module):
     def __init__(self):
         super().__init__()
 
-        #self.max_len = max_len
-        #self.len_regulator = LengthRegulator()
-
-    def forward(self, fused_features, duration, max_mel_len=None, train=False):
+    def forward(self, fused_features, fused_masks, duration, max_mel_len=None, train=False):
         mel_len = list()
         features = list()
+        masks = list()
         duration = duration.squeeze()
 
-        for feature, repetition in zip(fused_features, duration):
+        for feature, mask, repetition in zip(fused_features, fused_masks, duration):
             repetition = repetition.squeeze().long()
             feature = feature.repeat_interleave(repetition, dim=0)
+            mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
             if max_mel_len is not None:
                 feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]), "constant", 0.0)
+                mask = F.pad(mask, (0, 0, 0,  max_mel_len - mask.shape[0]), "constant", True)
             features.append(feature)
+            masks.append(mask)
 
         if max_mel_len is None:
             max_mel_len = max(mel_len)
             features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]),
                                   "constant", 0.0) for feature in features]
+            masks = [F.pad(mask, (0, 0, 0, max_mel_len - mask.shape[0]), "constant", True) for mask in masks]
 
         
         features = torch.stack(features)
+        masks = torch.stack(masks)
         len_pred = torch.LongTensor(mel_len).to(features.device)
 
         #    duration = duration.squeeze().long()
@@ -243,7 +246,7 @@ class FeatureUpsampler(nn.Module):
         #    len_pred = [features.shape[1]]
         #    len_pred = torch.LongTensor(len_pred).to(features.device)
 
-        return features, len_pred
+        return features, masks, len_pred
 
 
 
@@ -274,8 +277,7 @@ class MelDecoder(nn.Module):
         self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
 
 
-    def forward(self, features, mask=None):
-        # TODO: Figure out how to use mask
+    def forward(self, features):
         skip = self.fuse(features)
 
         for convs, skip_norm in self.blocks:
@@ -327,7 +329,6 @@ class PhonemeEncoder(nn.Module):
     def forward(self, x, train=False):
         phoneme = x["phoneme"]
         phoneme_mask = x["phoneme_mask"] if phoneme.shape[0] > 1 else None
-        #print("Mask", phoneme_mask.shape)
 
         pitch_target = x["pitch"] if train else None
         energy_target = x["energy"] if train  else None
@@ -359,6 +360,12 @@ class PhonemeEncoder(nn.Module):
             duration_features = duration_features.masked_fill(mask, 0)
        
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
+
+        # TODO: Use fused_masks of all False for inference of bs=1
+        if mask is None:
+            fused_masks = torch.zeros_like(fused_features)
+        else:
+            fused_masks = torch.cat([mask, mask, mask, mask], dim=-1)
         
         if duration_target is None:
             duration_target = torch.round(duration_pred).squeeze().clamp(min=1)
@@ -367,16 +374,18 @@ class PhonemeEncoder(nn.Module):
         else:
             duration_target = duration_target.unsqueeze(0)
 
-        features, mel_len_pred = self.feature_upsampler(fused_features,
-                                                        duration=duration_target,
-                                                        max_mel_len=max_mel_len,
-                                                        train=train)                                          
+        features, masks, mel_len_pred = self.feature_upsampler(fused_features,
+                                                               fused_masks,
+                                                               duration=duration_target,
+                                                               max_mel_len=max_mel_len,
+                                                               train=train)
+
         y = {"pitch": pitch_pred,
              "energy": energy_pred,
              "duration": duration_pred,
              "mel_len": mel_len_pred,
              "features": features,
-             "mask": mask, }
+             "masks": masks, }
 
         return y
 
@@ -394,11 +403,16 @@ class Phoneme2Mel(nn.Module):
 
     def forward(self, x, train=False):
         pred = self.encoder(x, train=train)
-        mel = self.decoder(pred["features"], pred["mask"]) 
+        mel = self.decoder(pred["features"]) 
+        
+        mask = pred["masks"]
+        if mask is not None and mel.size(0) > 1:
+            mask = mask[:, :, :mel.shape[-1]]
+            mel = mel.masked_fill(mask, 0)
+        
         pred["mel"] = mel
 
         if train: 
             return pred
-        return mel, pred["duration"], pred["mel_len"]
-        #return pred if train else mel, pred["duration"]
+        return mel, pred["mel_len"]
 

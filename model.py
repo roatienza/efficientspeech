@@ -81,10 +81,10 @@ class EfficientFSModule(LightningModule):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        mel, duration, mel_len = self.phoneme2mel(batch, train=False)
+        mel, mel_len = self.phoneme2mel(batch, train=False)
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, duration, mel_len
+        return wav, mel_len
 
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
@@ -163,13 +163,11 @@ class EfficientFSModule(LightningModule):
         # TODO: use predict step for wav file generation
         if batch_idx==0 and self.current_epoch>1:
             x, y = batch
-            wavs, _, lengths = self.forward(x)
+            wavs, lengths = self.forward(x)
             wavs = wavs.cpu().numpy()
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
                 wav_path=self.wav_path, filename="prediction")
 
-            #old_file = os.path.join(self.wav_path, "reconstruction-0.wav")
-            #if not os.path.isfile(old_file):
             mel = y["mel"]
             mel = mel.transpose(1, 2)
             lengths = x["mel_len"]
@@ -180,12 +178,6 @@ class EfficientFSModule(LightningModule):
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(),\
                      wav_path=self.wav_path, filename="reconstruction")
             
-            #mel_pred_len = y_hat["mel_len"]
-
-            #synth_test_samples(mel, mel_len, mel_pred, mel_pred_len, self.hifigan,
-            #                   self.preprocess_config, wav_path=self.wav_path)
-
-
     def test_epoch_end(self, outputs):
         pass
 
