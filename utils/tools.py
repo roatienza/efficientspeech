@@ -17,9 +17,9 @@ def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", fil
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     if lengths is not None:
         lengths *= preprocess_config["preprocessing"]["stft"]["hop_length"]
-    for i in range(len(wavs)):
-        if lengths is not None:
+        for i in range(len(wavs)):
             wavs[i] = wavs[i][: lengths[i]]
+            
     # create dir if not exists
     os.makedirs(wav_path, exist_ok=True)
     for i, wav in enumerate(wavs):

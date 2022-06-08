@@ -8,7 +8,7 @@ import torch.nn as nn
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
 from pytorch_lightning import LightningModule
 from torch.optim import AdamW
-from utils.tools import vocoder_infer, write_to_file
+from utils.tools import write_to_file
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
@@ -161,21 +161,24 @@ class EfficientFSModule(LightningModule):
 
     def test_step(self, batch, batch_idx):
         # TODO: use predict step for wav file generation
-        if batch_idx==0 and (self.current_epoch%10==0 or self.current_epoch==self.max_epochs):
+        if batch_idx==0 and self.current_epoch>1:
             x, y = batch
             wavs, _, lengths = self.forward(x)
             wavs = wavs.cpu().numpy()
-            write_to_file(wavs, self.preprocess_config, lengths=lengths, wav_path=self.wav_path, filename="prediction")
+            write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
+                wav_path=self.wav_path, filename="prediction")
 
-            old_file = os.path.join(self.wav_path, "reconstruction-0.wav")
-            if not os.path.isfile(old_file):
-                mel = y["mel"]
-                mel = mel.transpose(1, 2)
-                lengths = x["mel_len"]
-                with torch.no_grad():
-                    wavs = self.hifigan(mel).squeeze(1)
-                    wavs = wavs.cpu().numpy()
-                write_to_file(wavs, self.preprocess_config, lengths=lengths, wav_path=self.wav_path, filename="reconstruction")
+            #old_file = os.path.join(self.wav_path, "reconstruction-0.wav")
+            #if not os.path.isfile(old_file):
+            mel = y["mel"]
+            mel = mel.transpose(1, 2)
+            lengths = x["mel_len"]
+            with torch.no_grad():
+                wavs = self.hifigan(mel).squeeze(1)
+                wavs = wavs.cpu().numpy()
+            
+            write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(),\
+                     wav_path=self.wav_path, filename="reconstruction")
             
             #mel_pred_len = y_hat["mel_len"]
 

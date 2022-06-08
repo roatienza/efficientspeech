@@ -72,12 +72,12 @@ class LJSpeechDataModule(LightningDataModule):
         self.train_dataset = LJSpeechDataset("train.txt", 
                                              self.preprocess_config)
 
-        print("Train dataset size: {}".format(len(self.train_dataset)))
+        #print("Train dataset size: {}".format(len(self.train_dataset)))
 
         self.test_dataset = LJSpeechDataset("val.txt",
                                             self.preprocess_config)
 
-        print("Test dataset size: {}".format(len(self.test_dataset)))
+        #print("Test dataset size: {}".format(len(self.test_dataset)))
 
     def setup(self, stage=None):
         self.prepare_data()
@@ -93,7 +93,8 @@ class LJSpeechDataModule(LightningDataModule):
     def test_dataloader(self):
         self.test_dataloader = DataLoader(self.test_dataset,
                                           shuffle=False,
-                                          batch_size=self.batch_size,
+                                          #batch_size=self.batch_size,
+                                          batch_size=16,
                                           collate_fn=self.collate_fn,
                                           num_workers=self.num_workers)
         return self.test_dataloader

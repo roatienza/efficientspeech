@@ -3,8 +3,8 @@ import torch
 import torch.nn.functional as F
 #from einops import rearrange
 from torch import nn
-from .blocks import EfficientSelfAttention, MixFFN, Attention, SelfAttention
-from .acoustic import LengthRegulator
+from .blocks import MixFFN, SelfAttention
+#from .acoustic import LengthRegulator
 from text.symbols import symbols
 
 
@@ -32,8 +32,6 @@ class Encoder(nn.Module):
                     nn.ModuleList([
                         nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, padding=padding, bias=False),
                         nn.Conv1d(dim_in, dim_out, kernel_size=1, bias=False), 
-                        #EfficientSelfAttention(dim_out, head=head), 
-                        #Attention(dim_out, num_heads=head), 
                         SelfAttention(dim_out, num_heads=head),
                         MixFFN(dim_out, expansion),
                         nn.LayerNorm(dim_out),
@@ -217,7 +215,7 @@ class FeatureUpsampler(nn.Module):
         #self.max_len = max_len
         #self.len_regulator = LengthRegulator()
 
-    def forward(self, fused_features, duration, max_mel_len, train=False):
+    def forward(self, fused_features, duration, max_mel_len=None, train=False):
         mel_len = list()
         features = list()
         duration = duration.squeeze()
@@ -225,16 +223,17 @@ class FeatureUpsampler(nn.Module):
         for feature, repetition in zip(fused_features, duration):
             repetition = repetition.squeeze().long()
             feature = feature.repeat_interleave(repetition, dim=0)
-            mel_len.append(feature.size(0))
+            mel_len.append(feature.shape[0])
             if max_mel_len is not None:
-                feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)), "constant", 0.0)
+                feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]), "constant", 0.0)
             features.append(feature)
 
         if max_mel_len is None:
             max_mel_len = max(mel_len)
-            features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.size(0)),
+            features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]),
                                   "constant", 0.0) for feature in features]
 
+        
         features = torch.stack(features)
         len_pred = torch.LongTensor(mel_len).to(features.device)
 
@@ -327,7 +326,7 @@ class PhonemeEncoder(nn.Module):
 
     def forward(self, x, train=False):
         phoneme = x["phoneme"]
-        phoneme_mask = x["phoneme_mask"] if train else None
+        phoneme_mask = x["phoneme_mask"] if phoneme.shape[0] > 1 else None
         #print("Mask", phoneme_mask.shape)
 
         pitch_target = x["pitch"] if train else None
@@ -362,7 +361,7 @@ class PhonemeEncoder(nn.Module):
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
         
         if duration_target is None:
-            duration_target = torch.round(duration_pred).squeeze()
+            duration_target = torch.round(duration_pred).squeeze().clamp(min=1)
         if phoneme_mask is not None:
             duration_target = duration_target.masked_fill(phoneme_mask, 0)
         else:
