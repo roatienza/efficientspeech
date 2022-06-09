@@ -100,25 +100,25 @@ class SelfAttention(nn.Module):
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
         attn_mask = None
-        if mask is not None:
-            if pool > 1:
-                mod = mask.shape[-1] % pool
-                if mod > 0:
-                    pad = [0, int(pool-mod)]
-                    mask = F.pad(mask, pad, value=True)
-                mask = reduce(mask, 'b (n p) -> b n', 'max', p=pool)
+        #if mask is not None:
+        #    if pool > 1:
+        #        mod = mask.shape[-1] % pool
+        #        if mod > 0:
+        #            pad = [0, int(pool-mod)]
+        #            mask = F.pad(mask, pad, value=True)
+        #        mask = reduce(mask, 'b (n p) -> b n', 'max', p=pool)
 
-            attn_mask = mask.unsqueeze(1).expand(-1, attn.shape[-1], -1)
-            attn_mask = attn_mask.repeat(self.num_heads, 1, 1) 
-            attn_mask = attn_mask.reshape(-1, self.num_heads, attn_mask.shape[-2], attn_mask.shape[-1])
+        #    attn_mask = mask.unsqueeze(1).expand(-1, attn.shape[-1], -1)
+        #    attn_mask = attn_mask.repeat(self.num_heads, 1, 1) 
+        #    attn_mask = attn_mask.reshape(-1, self.num_heads, attn_mask.shape[-2], attn_mask.shape[-1])
 
         attn = attn.softmax(dim=-1)
 
         x = (attn @ v).transpose(1, 2).reshape(B, N, -1)
         x = self.proj(x)
         
-        if mask is not None:
-            attn_mask = repeat(mask, 'b n -> b n a', a=x.shape[-1])
+        #if mask is not None:
+        #    attn_mask = repeat(mask, 'b n -> b n a', a=x.shape[-1])
 
         return x, attn_mask
 
