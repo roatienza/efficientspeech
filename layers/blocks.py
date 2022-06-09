@@ -99,7 +99,7 @@ class SelfAttention(nn.Module):
         q, k, v = qkv.unbind(0)   # make torchscript happy (cannot use tensor as tuple)
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn_mask = None
+        #attn_mask = None
         #if mask is not None:
         #    if pool > 1:
         #        mod = mask.shape[-1] % pool
@@ -120,7 +120,7 @@ class SelfAttention(nn.Module):
         #if mask is not None:
         #    attn_mask = repeat(mask, 'b n -> b n a', a=x.shape[-1])
 
-        return x, attn_mask
+        return x, None #attn_mask
 
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=2, qkv_bias=False):
