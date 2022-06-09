@@ -44,9 +44,9 @@ class Encoder(nn.Module):
         # merge, attn and mixffn operates on n or seqlen dim
         # b = batch, n = sequence len, c = channel (1st layer is embedding)
         # (b, n, c)
-        n = x.shape[-2]
+        #n = x.shape[-2]
         decoder_mask = None
-        pool = 1
+        #pool = 1
 
         for merge3x3, merge1x1, attn, mixffn, norm in self.attn_blocks:
             # after each encoder block, merge features
