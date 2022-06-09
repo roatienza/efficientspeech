@@ -44,9 +44,9 @@ class Encoder(nn.Module):
         # merge, attn and mixffn operates on n or seqlen dim
         # b = batch, n = sequence len, c = channel (1st layer is embedding)
         # (b, n, c)
-        #n = x.shape[-2]
+        n = x.shape[-2]
         decoder_mask = None
-        #pool = 1
+        pool = 1
 
         for merge3x3, merge1x1, attn, mixffn, norm in self.attn_blocks:
             # after each encoder block, merge features
@@ -55,22 +55,21 @@ class Encoder(nn.Module):
             x = merge1x1(x)
             x = x.permute(0, 2, 1)
             # self-attention with skip connect
-            #if mask is not None:
-            #    pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
+            if mask is not None:
+                pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             
-            #y, attn_mask = attn(x, mask=mask, pool=pool)
-            y = attn(x)
+            y, attn_mask = attn(x, mask=mask, pool=pool)
             x = norm(y + x)
-            #if attn_mask is not None:
-            #    x = x.masked_fill(attn_mask, 0)
-            #    if decoder_mask is None:
-            #        decoder_mask = attn_mask
+            if attn_mask is not None:
+                x = x.masked_fill(attn_mask, 0)
+                if decoder_mask is None:
+                    decoder_mask = attn_mask
            
             # Mix-FFN with skip connect
             x = norm(mixffn(x) + x)
             
-            #if attn_mask is not None:
-            #    x = x.masked_fill(attn_mask, 0)
+            if attn_mask is not None:
+                x = x.masked_fill(attn_mask, 0)
             # mlp decoder operates on c or channel dim
             features.append(x)
 
@@ -260,16 +259,18 @@ class MelDecoder(nn.Module):
         dim_x4 = 4*dim
         padding = kernel_size // 2
   
-        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2),
-                                  nn.LayerNorm(dim_x2),)
+        #self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2),
+        #                          nn.LayerNorm(dim_x2),)
+        
+        self.fuse = nn.Linear(dim_x4, dim_x2)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
                 conv.append(nn.ModuleList([nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),
-                            nn.Tanh(),
-                            nn.LayerNorm(dim_x2),]))
+                            nn.Tanh(),]))
+                            #nn.LayerNorm(dim_x2),]))
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
     
         self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
@@ -279,14 +280,18 @@ class MelDecoder(nn.Module):
         skip = self.fuse(features)
 
         for convs, skip_norm in self.blocks:
-            mel = skip.permute(0, 2, 1)
+            #mel = skip.permute(0, 2, 1)
+            x = skip.permute(0, 2, 1)
            
-            for conv, act, norm in convs:
-                x = act(conv(mel))
-                x = x.permute(0, 2, 1)
-                x = norm(x)
-                mel = x.permute(0, 2, 1) 
-
+            #for conv, act, norm in convs:
+            for conv, act in convs:
+                x = act(conv(x))
+                #x = act(conv(mel))
+                #x = x.permute(0, 2, 1)
+                #x = norm(x)
+                #mel = x.permute(0, 2, 1) 
+                
+            x = x.permute(0, 2, 1)
             skip = skip_norm(x + skip)
 
         # resize channel to mel length (eg 80)
