@@ -1,10 +1,8 @@
 
 import torch
 import torch.nn.functional as F
-#from einops import rearrange
 from torch import nn
 from .blocks import MixFFN, SelfAttention
-#from .acoustic import LengthRegulator
 from text.symbols import symbols
 
 
@@ -363,7 +361,7 @@ class PhonemeEncoder(nn.Module):
 
         # TODO: Use fused_masks of all False for inference of bs=1
         if mask is None:
-            fused_masks = torch.zeros_like(fused_features)
+            fused_masks = torch.zeros_like(fused_features).bool()
         else:
             fused_masks = torch.cat([mask, mask, mask, mask], dim=-1)
         
