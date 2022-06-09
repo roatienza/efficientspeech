@@ -92,7 +92,7 @@ class SelfAttention(nn.Module):
         self.qkv = nn.Linear(dim, dim * 3 * num_heads, bias=qkv_bias)
         self.proj = nn.Linear(dim * num_heads, dim)
 
-    def forward(self, x, mask=None, pool=1):
+    def forward(self, x): #, mask=None, pool=1):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C).permute(2, 0, 3, 1, 4)
         # qkv dim is [3, B, num_heads, N, C]
@@ -120,7 +120,7 @@ class SelfAttention(nn.Module):
         #if mask is not None:
         #    attn_mask = repeat(mask, 'b n -> b n a', a=x.shape[-1])
 
-        return x, None #attn_mask
+        return x #, attn_mask
 
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=2, qkv_bias=False):

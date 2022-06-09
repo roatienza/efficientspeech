@@ -55,22 +55,22 @@ class Encoder(nn.Module):
             x = merge1x1(x)
             x = x.permute(0, 2, 1)
             # self-attention with skip connect
-            if mask is not None:
-                pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
+            #if mask is not None:
+            #    pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             
-            #pool = round(n / x.shape[-2])
-            y, attn_mask = attn(x, mask=mask, pool=pool)
+            #y, attn_mask = attn(x, mask=mask, pool=pool)
+            y = attn(x)
             x = norm(y + x)
-            if attn_mask is not None:
-                x = x.masked_fill(attn_mask, 0)
-                if decoder_mask is None:
-                    decoder_mask = attn_mask
+            #if attn_mask is not None:
+            #    x = x.masked_fill(attn_mask, 0)
+            #    if decoder_mask is None:
+            #        decoder_mask = attn_mask
            
             # Mix-FFN with skip connect
             x = norm(mixffn(x) + x)
             
-            if attn_mask is not None:
-                x = x.masked_fill(attn_mask, 0)
+            #if attn_mask is not None:
+            #    x = x.masked_fill(attn_mask, 0)
             # mlp decoder operates on c or channel dim
             features.append(x)
 
