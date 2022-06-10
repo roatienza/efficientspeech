@@ -259,13 +259,13 @@ class MelDecoder(nn.Module):
         dim_x4 = 4*dim
         padding = kernel_size // 2
   
-        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.Tanh(), nn.LayerNorm(dim_x2),)
+        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.LayerNorm(dim_x2),)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
-                conv.append(nn.Sequential(nn.Tanh(),nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),))
+                conv.append(nn.ModuleList([nn.Sequential(nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),nn.Tanh(),),nn.LayerNorm(dim_x2)]))
 
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
     
@@ -276,12 +276,15 @@ class MelDecoder(nn.Module):
         skip = self.fuse(features)
 
         for convs, skip_norm in self.blocks:
-            x = skip.permute(0, 2, 1)
+            mel = skip.permute(0, 2, 1)
 
-            for conv in convs:
-                x = conv(x)
+            for conv, norm in convs:
+                x = conv(mel)
+                x = x.permute(0, 2, 1)
+                x = norm(x)
+                mel = x.permute(0, 2, 1)
 
-            skip = skip_norm(x.permute(0, 2, 1) + skip)
+            skip = skip_norm(x + skip)
 
         # resize channel to mel length (eg 80)
         mel = self.mel_linear(skip)
