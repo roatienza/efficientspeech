@@ -260,16 +260,13 @@ class MelDecoder(nn.Module):
         padding = kernel_size // 2
   
         self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.Tanh(), nn.LayerNorm(dim_x2),)
-        #self.fuse = nn.Linear(dim_x4, dim_x2)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
                 conv.append(nn.Sequential(nn.Tanh(),nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),))
-                #conv.append(nn.ModuleList([nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),
-                #            nn.Tanh(),]))
-                            #nn.LayerNorm(dim_x2),]))
+
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
     
         self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
