@@ -259,8 +259,8 @@ class MelDecoder(nn.Module):
         dim_x4 = 4*dim
         padding = kernel_size // 2
   
-        #self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.LayerNorm(dim_x2),)
-        self.fuse = nn.Linear(dim_x4, dim_x2)
+        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.Tanh(), nn.LayerNorm(dim_x2),)
+        #self.fuse = nn.Linear(dim_x4, dim_x2)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
