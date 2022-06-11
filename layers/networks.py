@@ -274,9 +274,8 @@ class MelDecoder(nn.Module):
 
     def forward(self, features):
         skip = self.fuse(features)
-        x = skip
-
         for convs, skip_norm in self.blocks:
+            x = skip
             for conv, norm in convs:
                 x = conv(x.permute(0, 2, 1))
                 x = norm(x.permute(0, 2, 1))
