@@ -246,11 +246,10 @@ class FeatureUpsampler(nn.Module):
         return features, masks, len_pred
 
 
-
 class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
-    def __init__(self, dim, kernel_size=5, n_mel_channels=80, 
+    def __init__(self, dim, kernel_size=5, n_mel_channels=80,
                  n_blocks=2, block_depth=2,):
         super().__init__()
 
@@ -258,31 +257,29 @@ class MelDecoder(nn.Module):
         dim_x2 = min(4*dim, 256)
         dim_x4 = 4*dim
         padding = kernel_size // 2
-  
-        self.fuse = nn.Sequential(nn.Linear(dim_x4, dim_x2), nn.LayerNorm(dim_x2),)
+
+        self.fuse = nn.Sequential(
+            nn.Linear(dim_x4, dim_x2), nn.Tanh(), nn.LayerNorm(dim_x2),)
 
         self.blocks = nn.ModuleList([])
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
-                conv.append(nn.ModuleList([nn.Sequential(nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding),nn.Tanh(),),nn.LayerNorm(dim_x2)]))
+                conv.append(nn.ModuleList([nn.Sequential(nn.Conv1d(
+                    dim_x2, dim_x2, kernel_size=kernel_size, padding=padding), nn.Tanh(),), nn.LayerNorm(dim_x2)]))
 
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
-    
-        self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
 
+        self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
 
     def forward(self, features):
         skip = self.fuse(features)
+        x = skip
 
         for convs, skip_norm in self.blocks:
-            mel = skip.permute(0, 2, 1)
-
             for conv, norm in convs:
-                x = conv(mel)
-                x = x.permute(0, 2, 1)
-                x = norm(x)
-                mel = x.permute(0, 2, 1)
+                x = conv(x.permute(0, 2, 1))
+                x = norm(x.permute(0, 2, 1))
 
             skip = skip_norm(x + skip)
 

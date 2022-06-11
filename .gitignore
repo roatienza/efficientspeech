@@ -139,3 +139,4 @@ lightning_logs
 LJ_V3/
 LJ_FT_T2_V2/
 *.onnx
+*.swp
