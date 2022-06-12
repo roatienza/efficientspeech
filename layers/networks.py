@@ -221,24 +221,26 @@ class FeatureUpsampler(nn.Module):
             mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
             if max_mel_len is not None:
-                feature = F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]), "constant", 0.0)
-                mask = F.pad(mask, (0, 0, 0,  max_mel_len - mask.shape[0]), "constant", True)
+                feature = F.pad(feature, (0, 0, 0, max_mel_len -
+                                feature.shape[0]), "constant", 0.0)
+                mask = F.pad(mask, (0, 0, 0,  max_mel_len -
+                             mask.shape[0]), "constant", True)
             features.append(feature)
             masks.append(mask)
 
         if max_mel_len is None:
             max_mel_len = max(mel_len)
             features = [F.pad(feature, (0, 0, 0, max_mel_len - feature.shape[0]),
-                                  "constant", 0.0) for feature in features]
-            masks = [F.pad(mask, (0, 0, 0, max_mel_len - mask.shape[0]), "constant", True) for mask in masks]
+                              "constant", 0.0) for feature in features]
+            masks = [F.pad(mask, (0, 0, 0, max_mel_len - mask.shape[0]),
+                           "constant", True) for mask in masks]
 
-        
         features = torch.stack(features)
         masks = torch.stack(masks)
         len_pred = torch.LongTensor(mel_len).to(features.device)
 
         #    duration = duration.squeeze().long()
-            # have to find the max duration in the dataset
+        # have to find the max duration in the dataset
         #    features = fused_features.repeat_interleave(duration, dim=1)
         #    len_pred = [features.shape[1]]
         #    len_pred = torch.LongTensor(len_pred).to(features.device)
@@ -361,9 +363,9 @@ class PhonemeEncoder(nn.Module):
         if duration_target is None:
             duration_target = torch.round(duration_pred).squeeze().clamp(min=1)
         if phoneme_mask is not None:
-            duration_target = duration_target.masked_fill(phoneme_mask, 0)
+            duration_target = duration_target.masked_fill(phoneme_mask, 0).clamp(min=1)
         else:
-            duration_target = duration_target.unsqueeze(0)
+            duration_target = duration_target.unsqueeze(0).clamp(min=1)
 
         features, masks, mel_len_pred = self.feature_upsampler(fused_features,
                                                                fused_masks,
