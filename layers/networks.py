@@ -216,7 +216,7 @@ class FeatureUpsampler(nn.Module):
         duration = duration.squeeze()
 
         for feature, mask, repetition in zip(fused_features, fused_masks, duration):
-            repetition = repetition.squeeze().long()
+            repetition = repetition.squeeze().long().clamp(min=0)
             feature = feature.repeat_interleave(repetition, dim=0)
             mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
@@ -361,11 +361,11 @@ class PhonemeEncoder(nn.Module):
             fused_masks = torch.cat([mask, mask, mask, mask], dim=-1)
         
         if duration_target is None:
-            duration_target = torch.round(duration_pred).squeeze().clamp(min=1)
+            duration_target = torch.round(duration_pred).squeeze()
         if phoneme_mask is not None:
-            duration_target = duration_target.masked_fill(phoneme_mask, 0).clamp(min=1)
+            duration_target = duration_target.masked_fill(phoneme_mask, 0)
         else:
-            duration_target = duration_target.unsqueeze(0).clamp(min=1)
+            duration_target = duration_target.unsqueeze(0)
 
         features, masks, mel_len_pred = self.feature_upsampler(fused_features,
                                                                fused_masks,
