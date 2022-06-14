@@ -128,13 +128,16 @@ if __name__ == "__main__":
                 outputs = ort_session.run(None, ort_inputs)
                 wavs = outputs[0]
                 hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
-                duration = int(outputs[1] * hop_len)
+                duration = int(outputs[2])
+                orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+                #duration = int(outputs[1] * hop_len)
                 #orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len]))
-                wavs = wavs[:, :duration]
+                wavs = wavs[:, :orig_duration]
+                duration = [orig_duration]
             else:
                 with torch.no_grad():
                     phoneme = torch.from_numpy(phoneme).long()
-                    wavs, duration = pl_module({"phoneme": phoneme})
+                    wavs, duration, _ = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
                     duration = duration.cpu().numpy()
 
