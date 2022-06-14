@@ -414,6 +414,10 @@ def get_args():
                         default="outputs",
                         type=str,
                         help="path to wav file to be generated",)
+    parser.add_argument("--wav-filename",
+                        default="efficient_speech",
+                        type=str,
+                        help="wav filename to be generated",)
     parser.add_argument("--checkpoints",
                         default="checkpoints",
                         type=str,

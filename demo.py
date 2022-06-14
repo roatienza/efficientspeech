@@ -99,7 +99,7 @@ if __name__ == "__main__":
     sd.default.dtype = 'int16'
     sd.default.device = None
     sd.default.latency = 'low'
-    
+
     while True:
         event, values = g_window.read()
         if event == sg.WIN_CLOSED or event == '-QUIT-':
@@ -113,28 +113,29 @@ if __name__ == "__main__":
             if args.text[-1] == ".":
                 args.text = args.text[:-1]
             args.text += ". "
-            phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)])
+            phoneme = np.array(
+                [text2phoneme(lexicon, g2p, args.text, preprocess_config)])
             if is_onnx:
                 # onnx is 3.5x faster than pytorch models
                 phoneme_len = phoneme.shape[1]
-                n_append = args.onnx_insize // phoneme_len 
+                n_append = args.onnx_insize // phoneme_len
                 phoneme = [phoneme] * (n_append + 1)
                 phoneme = np.concatenate(phoneme, axis=1)
                 phoneme = phoneme[:, :args.onnx_insize]
-                
+
                 ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
                 outputs = ort_session.run(None, ort_inputs)
                 wavs = outputs[0]
                 hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
                 duration = int(outputs[1] * hop_len)
                 #orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len]))
-                wavs = wavs[:, :duration]            
+                wavs = wavs[:, :duration]
             else:
                 with torch.no_grad():
-                    phoneme = torch.from_numpy(phoneme).long() 
+                    phoneme = torch.from_numpy(phoneme).long()
                     wavs, duration = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
-                    duration = duration.cpu().numpy()                    
+                    duration = duration.cpu().numpy()
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
@@ -151,7 +152,8 @@ if __name__ == "__main__":
 
             sd.play(wav)
             sd.wait()
-            write_to_file(wavs, preprocess_config, lengths=duration,  wav_path=args.wav_path, filename="demo")
+            write_to_file(wavs, preprocess_config, lengths=duration,
+                          wav_path=args.wav_path, filename=args.wav_filename)
 
         elif event == '-CLEAR-':
             multiline.update('')
