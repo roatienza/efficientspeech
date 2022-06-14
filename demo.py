@@ -1,13 +1,26 @@
 '''
 EfficientSpeech Text to Speech (TTS) demo.
 
-To use microphone input with GUI interface, run:
+To use speaker with GUI interface, run:
     (Tagalog)
-    ONNX:
-      python3 demo.py --checkpoint checkpoints/tiny_v2_tag_attn.onnx --preprocess-config config/isip-preprocess.yaml
+    ONNX: 
+    (English LJ - Small)
+      python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.onnx --accelerator cpu \
+        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
+
+    (Tagalog ISIP - Tiny)
+      python3 demo.py --checkpoint checkpoints/tiny_v2_tag_attn.onnx --preprocess-config \
+        config/isip-preprocess.yaml
+    
     Torch model:
-      python3 demo.py --checkpoint checkpoints/small_v2_tag_attn.ckpt --accelerator cpu --infer-device cpu --head 1 \
-          --reduction 2 --expansion 1 --kernel-size 3  --preprocess-config config/isip-preprocess.yaml
+    (English LJ - Small)
+      python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.ckpt --accelerator cpu \
+        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
+
+    (Tagalog ISIP - Tiny)
+      python3 demo.py --checkpoint checkpoints/small_v2_tag_attn.ckpt --accelerator cpu \
+        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3 \
+        --preprocess-config config/isip-preprocess.yaml
 
 Dependencies:
     pip3 install pysimplegui
@@ -115,7 +128,7 @@ if __name__ == "__main__":
             args.text += ". "
             phoneme = np.array(
                 [text2phoneme(lexicon, g2p, args.text, preprocess_config)])
-
+            print(phoneme)
             if is_onnx:
                 # onnx is 3.5x faster than pytorch models
                 phoneme_len = phoneme.shape[1]
@@ -128,10 +141,8 @@ if __name__ == "__main__":
                 outputs = ort_session.run(None, ort_inputs)
                 wavs = outputs[0]
                 hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
-                duration = int(outputs[2])
+                duration = outputs[2]
                 orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
-                #duration = int(outputs[1] * hop_len)
-                #orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len]))
                 wavs = wavs[:, :orig_duration]
                 duration = [orig_duration]
             else:
