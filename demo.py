@@ -137,7 +137,7 @@ if __name__ == "__main__":
                     print("wavs", wavs.shape)
                     print("min", np.min(wavs))
                     print("max", np.max(wavs))
-                    duration = duration.squeeze().round().long().cpu().numpy()
+                    duration = duration.squeeze().cpu().numpy()
                     print("duration", duration.shape)
                     #phoneme = phoneme.repeat_interleave(duration, dim=1)
                     
