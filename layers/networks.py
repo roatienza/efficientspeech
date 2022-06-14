@@ -351,6 +351,12 @@ class PhonemeEncoder(nn.Module):
         duration_pred, duration_features = self.duration_decoder(fused_features)
         if mask is not None:
             duration_features = duration_features.masked_fill(mask, 0)
+
+        print("fused", fused_features.shape)
+        print("pitch", pitch_features.shape)
+        print("energy", energy_features.shape)
+        print("duration", duration_features.shape)
+        exit(0)
        
         fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
 
