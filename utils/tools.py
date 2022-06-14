@@ -25,6 +25,8 @@ def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", fil
     for i, wav in enumerate(wavs):
         path = os.path.join(wav_path, "{}-{}.wav".format(filename, i))
         wavfile.write(path, sampling_rate, wav)
+    
+    return wavs, sampling_rate
 
 def get_mask_from_lengths(lengths, max_len=None):
     batch_size = lengths.shape[0]

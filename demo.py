@@ -132,10 +132,15 @@ if __name__ == "__main__":
             else:
                 with torch.no_grad():
                     phoneme = torch.from_numpy(phoneme).long() 
-                    wavs, _ = pl_module({"phoneme": phoneme})
-                    #duration = duration.squeeze().round().long()
-                    #phoneme = phoneme.repeat_interleave(duration, dim=1)
+                    wavs, duration = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
+                    print("wavs", wavs.shape)
+                    print("min", np.min(wavs))
+                    print("max", np.max(wavs))
+                    duration = duration.squeeze().round().long().cpu().numpy()
+                    print("duration", duration.shape)
+                    #phoneme = phoneme.repeat_interleave(duration, dim=1)
+                    
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
