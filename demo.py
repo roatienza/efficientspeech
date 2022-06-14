@@ -134,14 +134,7 @@ if __name__ == "__main__":
                     phoneme = torch.from_numpy(phoneme).long() 
                     wavs, duration = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
-                    print("wavs", wavs.shape)
-                    print("min", np.min(wavs))
-                    print("max", np.max(wavs))
-                    duration = duration.cpu().numpy()
-                    print("duration", duration.shape)
-                    print(duration)
-                    #phoneme = phoneme.repeat_interleave(duration, dim=1)
-                    
+                    duration = duration.cpu().numpy()                    
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
