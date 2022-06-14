@@ -213,11 +213,16 @@ class FeatureUpsampler(nn.Module):
         mel_len = list()
         features = list()
         masks = list()
+        print("dur0", duration.shape)
         duration = duration.squeeze()
+        print("dur1", duration.shape)
 
         for feature, mask, repetition in zip(fused_features, fused_masks, duration):
+            print("Rep 0", repetition)
             repetition = repetition.squeeze().long().clamp(min=1)
+            print("Rep 1", repetition)
             feature = feature.repeat_interleave(repetition, dim=0)
+            print("feature", feature.size())
             mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
             if max_mel_len is not None:
@@ -367,12 +372,15 @@ class PhonemeEncoder(nn.Module):
             duration_target = duration_target.masked_fill(phoneme_mask, 0)
         else:
             duration_target = duration_target.unsqueeze(0)
+            print(duration_target)
 
         features, masks, mel_len_pred = self.feature_upsampler(fused_features,
                                                                fused_masks,
                                                                duration=duration_target,
                                                                max_mel_len=max_mel_len,
                                                                train=train)
+        if mask is None:
+            masks = None
 
         y = {"pitch": pitch_pred,
              "energy": energy_pred,

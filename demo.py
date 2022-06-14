@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
             sd.play(wav)
             sd.wait()
-            write_to_file(wavs, preprocess_config, lengths=duration args.wav_path)
+            write_to_file(wavs, preprocess_config, lengths=duration,  wav_path=args.wav_path, filename="demo")
 
         elif event == '-CLEAR-':
             multiline.update('')
