@@ -382,6 +382,8 @@ class PhonemeEncoder(nn.Module):
         if mask is None:
             masks = None
 
+        exit(0)
+
         y = {"pitch": pitch_pred,
              "energy": energy_pred,
              "duration": duration_pred,
