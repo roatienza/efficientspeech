@@ -218,11 +218,11 @@ class FeatureUpsampler(nn.Module):
         print("dur1", duration.shape)
 
         for feature, mask, repetition in zip(fused_features, fused_masks, duration):
-            print("Rep 0", repetition)
+            print("Rep 0", repetition.shape)
             repetition = repetition.squeeze().long().clamp(min=1)
-            print("Rep 1", repetition)
+            print("Rep 1", repetition.shape)
             feature = feature.repeat_interleave(repetition, dim=0)
-            print("feature", feature.size())
+            #print("feature", feature.size())
             mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
             if max_mel_len is not None:
