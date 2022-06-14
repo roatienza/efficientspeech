@@ -441,7 +441,7 @@ def get_args():
                         help='max input size for the onnx model')
     parser.add_argument('--onnx-opset',
                         type=int,
-                        default=12,
+                        default=13,
                         help='opset version of onnx model (9<opset<15)')
 
     parser.add_argument('--jit',
