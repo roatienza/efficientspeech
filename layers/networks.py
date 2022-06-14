@@ -343,6 +343,7 @@ class PhonemeEncoder(nn.Module):
         energy_pred = self.energy_decoder(fused_features)
         energy_features = self.energy_decoder.get_embedding(energy_pred, energy_target, mask)
         energy_features = energy_features.squeeze()
+        print("Energy dim", energy_features.dim())
         if mask is not None:
             energy_features = energy_features.masked_fill(mask, 0)
         elif pitch_features.dim() != 3:
