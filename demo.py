@@ -127,7 +127,7 @@ if __name__ == "__main__":
                 args.text = args.text[:-1]
             args.text += ". "
             phoneme = np.array(
-                [text2phoneme(lexicon, g2p, args.text, preprocess_config)])
+                [text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
             print(phoneme)
             if is_onnx:
                 # onnx is 3.5x faster than pytorch models
