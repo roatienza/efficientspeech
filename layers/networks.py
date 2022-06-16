@@ -215,7 +215,7 @@ class FeatureUpsampler(nn.Module):
         masks = list()
 
         for feature, mask, repetition in zip(fused_features, fused_masks, duration):
-            repetition = repetition.squeeze().long()
+            repetition = repetition.squeeze().int()
             feature = feature.repeat_interleave(repetition, dim=0)
             mask = mask.repeat_interleave(repetition, dim=0)
             mel_len.append(feature.shape[0])
@@ -236,13 +236,8 @@ class FeatureUpsampler(nn.Module):
 
         features = torch.stack(features)
         masks = torch.stack(masks)
-        len_pred = torch.LongTensor(mel_len).to(features.device)
-
-        #    duration = duration.squeeze().long()
-        # have to find the max duration in the dataset
-        #    features = fused_features.repeat_interleave(duration, dim=1)
-        #    len_pred = [features.shape[1]]
-        #    len_pred = torch.LongTensor(len_pred).to(features.device)
+        len_pred = torch.IntTensor(mel_len).to(features.device)
+        #len_pred = torch.LongTensor(mel_len).to(features.device)
 
         return features, masks, len_pred
 

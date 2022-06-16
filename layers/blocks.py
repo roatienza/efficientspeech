@@ -114,13 +114,9 @@ class EfficientSelfAttention(nn.Module):
         attn = rearrange(attn, '(b h) n c -> b n (h c)', h=head, n=x.shape[-2])
         attn = self.merge(attn)
 
-        #print("E Mask:", mask.shape)
-        #print("E Attn 1:", attn_mask.shape)
         if mask is not None:
             attn_mask = repeat(mask, 'b n -> b n a', a=attn.shape[-1])
-        #print("E Attn 2:", attn_mask.shape)
-        #print("E x:", x.shape)
-        #exit(0)
+
         return attn, attn_mask
 
 class Attention(nn.Module):

@@ -147,7 +147,7 @@ if __name__ == "__main__":
                 duration = [orig_duration]
             else:
                 with torch.no_grad():
-                    phoneme = torch.from_numpy(phoneme).long()
+                    phoneme = torch.from_numpy(phoneme).int()
                     wavs, duration, _ = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
                     duration = duration.cpu().numpy()

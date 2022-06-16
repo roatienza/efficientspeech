@@ -42,7 +42,7 @@ if __name__ == "__main__":
     pl_module.eval()
 
     if args.onnx is not None:
-        phoneme = torch.randint(low=150, high=196, size=(1,args.onnx_insize)).long()
+        phoneme = torch.randint(low=150, high=196, size=(1,args.onnx_insize)).int()
         print("Input shape: ", phoneme.shape)
         sample_input = {"phoneme": phoneme, }
         print("Converting to ONNX ...", args.onnx)
