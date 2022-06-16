@@ -39,17 +39,17 @@ class LJSpeechDataModule(LightningDataModule):
         energies = pad_1D(energies)
         durations = pad_1D(durations)
 
-        phonemes = torch.from_numpy(phonemes).long()
-        phoneme_lens = torch.from_numpy(phoneme_lens).long()
+        phonemes = torch.from_numpy(phonemes).int()
+        phoneme_lens = torch.from_numpy(phoneme_lens).int()
         max_phoneme_len = torch.max(phoneme_lens).item()
         phoneme_mask = get_mask_from_lengths(phoneme_lens, max_phoneme_len) 
 
         pitches = torch.from_numpy(pitches).float()
         energies = torch.from_numpy(energies).float()
-        durations = torch.from_numpy(durations).long()
+        durations = torch.from_numpy(durations).int()
 
         mels = torch.from_numpy(mels).float()
-        mel_lens = torch.from_numpy(mel_lens).long()
+        mel_lens = torch.from_numpy(mel_lens).int()
         max_mel_len = torch.max(mel_lens).item()
         mel_mask = get_mask_from_lengths(mel_lens, max_mel_len)
 
