@@ -28,6 +28,7 @@ class Encoder(nn.Module):
         for dim_in, dim_out, head, kernel, stride, padding in zip(dim_ins, self.dim_outs, heads, kernels, strides, paddings):
             self.attn_blocks.append(
                     nn.ModuleList([
+                        #deptwise separable convolution
                         nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, padding=padding, bias=False),
                         nn.Conv1d(dim_in, dim_out, kernel_size=1, bias=False), 
                         SelfAttention(dim_out, num_heads=head),
@@ -77,7 +78,7 @@ class Encoder(nn.Module):
 
 
 class AcousticDecoder(nn.Module):
-    """ Pitch, Duration, Energy Decoder """
+    """ Pitch, Duration, Energy Predictor """
 
     def __init__(self, dim, pitch_stats=None, energy_stats=None, n_mel_channels=80, dropout=0.1, duration=False):
         super().__init__()
@@ -165,7 +166,8 @@ class Fuse(nn.Module):
             self.mlps.append(
                     nn.ModuleList([
                         nn.Linear(d, dim),
-                        nn.ConvTranspose1d(dim, dim, kernel_size=kernel_size, stride=upsample) if upsample>1 else nn.Identity()
+                        nn.ConvTranspose1d(dim, dim, kernel_size=kernel_size, stride=upsample) \
+                                           if upsample>1 else nn.Identity()
                         ]))
 
         self.fuse = nn.Linear(dim*len(dims), dim)
@@ -261,8 +263,10 @@ class MelDecoder(nn.Module):
         for _ in range(n_blocks):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
-                conv.append(nn.ModuleList([nn.Sequential(nn.Conv1d(
-                    dim_x2, dim_x2, kernel_size=kernel_size, padding=padding), nn.Tanh(),), nn.LayerNorm(dim_x2)]))
+                conv.append(nn.ModuleList([nn.Sequential(\
+                        nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding), \
+                        nn.Tanh(),),\
+                        nn.LayerNorm(dim_x2)]))
 
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
 
