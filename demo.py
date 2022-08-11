@@ -36,7 +36,7 @@ import numpy as np
 from model import EfficientFSModule
 from utils.tools import get_args, write_to_file
 from synthesize import get_lexicon_and_g2p, text2phoneme
-from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
+
 #from scipy.io import wavfile
 
 if __name__ == "__main__":
@@ -73,6 +73,7 @@ if __name__ == "__main__":
                                                    verbose=args.verbose)
         pl_module.eval()
         if args.benchmark:
+            from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
             phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
             with torch.no_grad():
                 phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
