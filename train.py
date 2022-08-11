@@ -64,7 +64,8 @@ if __name__ == "__main__":
     if args.verbose:
         print_args(args)
         
-    trainer = Trainer(accelerator=args.accelerator, devices=args.devices,
+    trainer = Trainer(accelerator=args.accelerator, 
+                      devices=args.devices,
                       precision=args.precision,
                       strategy="ddp",
                       check_val_every_n_epoch=10,

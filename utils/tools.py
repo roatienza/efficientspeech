@@ -448,6 +448,13 @@ def get_args():
                         type=str,
                         default=None,
                         help='convert to jit model')
+
+
+    # if benchmark is True 
+    parser.add_argument('--benchmark',
+                        action='store_true',
+                        help='run benchmark')
+    
     args = parser.parse_args()
 
     if args.seed == 0:
