@@ -23,7 +23,7 @@ def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", fil
     # create dir if not exists
     os.makedirs(wav_path, exist_ok=True)
     for i, wav in enumerate(wavs):
-        path = os.path.join(wav_path, "{}-{}.wav".format(filename, i))
+        path = os.path.join(wav_path, "{}-{}.wav".format(filename, i+1))
         wavfile.write(path, sampling_rate, wav)
     
     return wavs, sampling_rate

@@ -136,7 +136,7 @@ class EfficientFSModule(LightningModule):
         y_hat = self.forward(x)
 
         mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y, x)
-        loss = (10. * mel_loss) + (4. * pitch_loss) + (2. * energy_loss) + duration_loss
+        loss = (10. * mel_loss) + (2. * pitch_loss) + (2. * energy_loss) + duration_loss
         
         return {"loss": loss, "mel_loss": mel_loss, "pitch_loss": pitch_loss,
                 "energy_loss": energy_loss, "duration_loss": duration_loss}
