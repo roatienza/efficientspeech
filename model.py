@@ -41,10 +41,10 @@ def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verb
 
 class EfficientFSModule(LightningModule):
     def __init__(self,
-                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=4500,
-                 depth=2, n_blocks=3, block_depth=2, reduction=1, head=2,
-                 embed_dim=128, kernel_size=5, decoder_kernel_size=5, expansion=2,
-                 wav_path="outputs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
+                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=5000,
+                 depth=2, n_blocks=2, block_depth=2, reduction=4, head=1,
+                 embed_dim=128, kernel_size=3, decoder_kernel_size=3, expansion=1,
+                 wav_path="wavs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
                  infer_device=None, verbose=False):
         super(EfficientFSModule, self).__init__()
 
@@ -136,8 +136,7 @@ class EfficientFSModule(LightningModule):
         y_hat = self.forward(x)
 
         mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y, x)
-        loss = (10. * mel_loss) + (2. * pitch_loss) + \
-            (2. * energy_loss) + duration_loss
+        loss = (10. * mel_loss) + (4. * pitch_loss) + (2. * energy_loss) + duration_loss
         
         return {"loss": loss, "mel_loss": mel_loss, "pitch_loss": pitch_loss,
                 "energy_loss": energy_loss, "duration_loss": duration_loss}
@@ -152,11 +151,11 @@ class EfficientFSModule(LightningModule):
         avg_duration_loss = torch.stack(
             [x["duration_loss"] for x in outputs]).mean()
         #self.log("train", avg_loss, on_epoch=True, prog_bar=True)
-        self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True)
-        self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True)
-        self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True)
-        self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True)
-        self.log("lr", self.scheduler.get_last_lr()[0], on_epoch=True, prog_bar=True)
+        self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("lr", self.scheduler.get_last_lr()[0], on_epoch=True, prog_bar=True, sync_dist=True)
 
 
     def test_step(self, batch, batch_idx):
@@ -176,7 +175,14 @@ class EfficientFSModule(LightningModule):
                 wavs = wavs.cpu().numpy()
             
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(),\
-                     wav_path=self.wav_path, filename="reconstruction")
+                    wav_path=self.wav_path, filename="reconstruction")
+
+            # write the text to be converted to file
+            path = os.path.join(self.wav_path, "prediction.txt")
+            with open(path, "w") as f:
+                text = x["text"] 
+                for i in range(len(text)):
+                    f.write(text[i] + "\n")
             
     def test_epoch_end(self, outputs):
         pass

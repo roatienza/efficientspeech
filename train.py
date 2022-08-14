@@ -8,6 +8,7 @@ import yaml
 
 from datamodule import LJSpeechDataModule
 from pytorch_lightning import Trainer
+from pytorch_lightning.strategies.ddp import DDPStrategy
 
 from utils.tools import get_args
 from model import EfficientFSModule
@@ -46,6 +47,8 @@ if __name__ == "__main__":
 
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
+    
+    args.num_workers *= args.devices 
 
     datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
                                     batch_size=args.batch_size,
@@ -67,21 +70,9 @@ if __name__ == "__main__":
     trainer = Trainer(accelerator=args.accelerator, 
                       devices=args.devices,
                       precision=args.precision,
-                      strategy="ddp",
+                      #strategy="ddp",
+                      strategy = DDPStrategy(find_unused_parameters=False),
                       check_val_every_n_epoch=10,
                       max_epochs=args.max_epochs,)
 
     trainer.fit(pl_module, datamodule=datamodule)
-
-    #if args.synthesize:
-    #    from synthesize import synthesize, load_module, get_lexicon_and_g2p
-    #    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-    #    lexicon, g2p = get_lexicon_and_g2p(preprocess_config)
-    #    synthesize(lexicon, g2p, args, phoneme2mel, hifigan,
-    #               preprocess_config=preprocess_config, verbose=args.verbose)
-    #elif args.to_torchscript:
-    #    convert_to_torchscipt(args, pl_module=pl_module,
-    #                          preprocess_config=preprocess_config)
-    #else:
-
-        #trainer.test(phoneme2mel, datamodule=datamodule)

@@ -5,11 +5,13 @@ from torch import nn
 from .blocks import MixFFN, SelfAttention
 from text.symbols import symbols
 
+_DROPOUT = 0.1
 
 class Encoder(nn.Module):
     """ Phoneme Encoder """
 
-    def __init__(self, depth=2, embed_dim=128, kernel_size=5, expansion=2, reduction=4, head=2):
+    def __init__(self, depth=2, embed_dim=128, kernel_size=5, \
+                 expansion=2, reduction=4, head=2, dropout=_DROPOUT,):
         super().__init__()
 
         small_embed_dim = embed_dim // reduction
@@ -23,18 +25,21 @@ class Encoder(nn.Module):
         strides.insert(0, 1)
         
         self.embed = nn.Embedding(len(symbols) + 1, embed_dim, padding_idx=0)
-
+    
         self.attn_blocks = nn.ModuleList([])
-        for dim_in, dim_out, head, kernel, stride, padding in zip(dim_ins, self.dim_outs, heads, kernels, strides, paddings):
+        for dim_in, dim_out, head, kernel, stride, padding in zip(dim_ins, self.dim_outs,\
+                                                                  heads, kernels, strides, paddings):
             self.attn_blocks.append(
                     nn.ModuleList([
                         #deptwise separable convolution
-                        nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, padding=padding, bias=False),
+                        nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, \
+                                  padding=padding, bias=False),
                         nn.Conv1d(dim_in, dim_out, kernel_size=1, bias=False), 
                         SelfAttention(dim_out, num_heads=head),
                         MixFFN(dim_out, expansion),
                         nn.LayerNorm(dim_out),
                         ]))
+        self.dropout = dropout
 
     def get_feature_dims(self):
         return self.dim_outs
@@ -60,7 +65,7 @@ class Encoder(nn.Module):
                 pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             
             y, attn_mask = attn(x, mask=mask, pool=pool)
-            x = norm(y + x)
+            x = nn.Dropout(self.dropout)(norm(y + x))
             if attn_mask is not None:
                 x = x.masked_fill(attn_mask, 0)
                 if decoder_mask is None:
@@ -80,14 +85,15 @@ class Encoder(nn.Module):
 class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Predictor """
 
-    def __init__(self, dim, pitch_stats=None, energy_stats=None, n_mel_channels=80, dropout=0.1, duration=False):
+    def __init__(self, dim, pitch_stats=None, energy_stats=None, \
+                 n_mel_channels=80, dropout=_DROPOUT, duration=False):
         super().__init__()
         
         self.n_mel_channels = n_mel_channels
 
         self.conv1 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm1 = nn.LayerNorm(dim)
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = dropout
         self.conv2 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm2 = nn.LayerNorm(dim)
         self.linear = nn.Linear(dim, 1)
@@ -96,7 +102,8 @@ class AcousticDecoder(nn.Module):
 
         if pitch_stats is not None:
             pitch_min, pitch_max = pitch_stats
-            self.pitch_bins = nn.Parameter(torch.linspace(pitch_min, pitch_max, dim - 1), requires_grad=False,)
+            self.pitch_bins = nn.Parameter(torch.linspace(pitch_min, pitch_max, dim - 1),\
+                                           requires_grad=False,)
             self.pitch_embedding = nn.Embedding(dim, dim)
         else:
             self.pitch_bins = None
@@ -104,7 +111,8 @@ class AcousticDecoder(nn.Module):
 
         if energy_stats is not None:
             energy_min, energy_max = energy_stats
-            self.energy_bins = nn.Parameter(torch.linspace(energy_min, energy_max, dim - 1), requires_grad=False,)
+            self.energy_bins = nn.Parameter(torch.linspace(energy_min, energy_max, dim - 1), \
+                                            requires_grad=False,)
             self.energy_embedding = nn.Embedding(dim, dim)
         else:
             self.energy_bins = None
@@ -138,12 +146,13 @@ class AcousticDecoder(nn.Module):
         y = fused_features.permute(0, 2, 1)
         y = self.conv1(y)
         y = y.permute(0, 2, 1)
-        y = self.dropout(self.norm1(y))
+        y = nn.Dropout(self.dropout)(self.norm1(y))
         y = y.permute(0, 2, 1)
         y = self.conv2(y)
         y = y.permute(0, 2, 1)
-        y = self.dropout(self.norm2(y))
+        y = self.norm2(y)
         features = y
+        y = nn.Dropout(self.dropout)(y)
         y = self.linear(y)
         if self.duration:
             y = self.relu(y)
@@ -154,7 +163,7 @@ class AcousticDecoder(nn.Module):
 class Fuse(nn.Module):
     """ Fuse Attn Features"""
 
-    def __init__(self, dims, kernel_size=5):
+    def __init__(self, dims, kernel_size=3):
         super().__init__()
 
         assert(len(dims)>0)
@@ -211,7 +220,8 @@ class FeatureUpsampler(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, fused_features, fused_masks, duration, max_mel_len=None, train=False):
+    def forward(self, fused_features, fused_masks, \
+                duration, max_mel_len=None): #, train=False):
         mel_len = list()
         features = list()
         masks = list()
@@ -247,8 +257,8 @@ class FeatureUpsampler(nn.Module):
 class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
-    def __init__(self, dim, kernel_size=5, n_mel_channels=80,
-                 n_blocks=2, block_depth=2,):
+    def __init__(self, dim, kernel_size=3, n_mel_channels=80,
+                 n_blocks=2, block_depth=2, dropout=_DROPOUT,):
         super().__init__()
 
         self.n_mel_channels = n_mel_channels
@@ -271,6 +281,7 @@ class MelDecoder(nn.Module):
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
 
         self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
+        self.dropout = dropout
 
     def forward(self, features):
         skip = self.fuse(features)
@@ -278,7 +289,7 @@ class MelDecoder(nn.Module):
             x = skip
             for conv, norm in convs:
                 x = conv(x.permute(0, 2, 1))
-                x = norm(x.permute(0, 2, 1))
+                x = nn.Dropout(self.dropout)(norm(x.permute(0, 2, 1)))
 
             skip = skip_norm(x + skip)
 
@@ -296,10 +307,10 @@ class PhonemeEncoder(nn.Module):
                  energy_stats=None, 
                  depth=2, 
                  reduction=4, 
-                 head=2, 
+                 head=1, 
                  embed_dim=128, 
-                 kernel_size=5, 
-                 expansion=2):
+                 kernel_size=3, 
+                 expansion=1):
         super().__init__()
 
         self.encoder = Encoder(depth=depth,
@@ -351,7 +362,8 @@ class PhonemeEncoder(nn.Module):
         if mask is not None:
             duration_features = duration_features.masked_fill(mask, 0)
        
-        fused_features = torch.cat([fused_features, pitch_features, energy_features, duration_features], dim=-1)
+        fused_features = torch.cat([fused_features, pitch_features, \
+                                    energy_features, duration_features], dim=-1)
 
         # TODO: Use fused_masks of all False for inference of bs=1
         if mask is None:
@@ -369,8 +381,8 @@ class PhonemeEncoder(nn.Module):
         features, masks, mel_len_pred = self.feature_upsampler(fused_features,
                                                                fused_masks,
                                                                duration=duration_target,
-                                                               max_mel_len=max_mel_len,
-                                                               train=train)
+                                                               max_mel_len=max_mel_len,)
+                                                               #train=train)
         if mask is None:
             masks = None
 

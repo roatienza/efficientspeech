@@ -93,8 +93,8 @@ class LJSpeechDataModule(LightningDataModule):
     def test_dataloader(self):
         self.test_dataloader = DataLoader(self.test_dataset,
                                           shuffle=False,
-                                          #batch_size=self.batch_size,
-                                          batch_size=16,
+                                          batch_size=self.batch_size // 4,
+                                          #batch_size=16,
                                           collate_fn=self.collate_fn,
                                           num_workers=self.num_workers)
         return self.test_dataloader

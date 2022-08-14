@@ -307,8 +307,8 @@ def get_args():
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--max_epochs", type=int, default=4500)
-    parser.add_argument("--warmup_epochs", type=int, default=20)
+    parser.add_argument("--max_epochs", type=int, default=5000)
+    parser.add_argument("--warmup_epochs", type=int, default=50)
 
     parser.add_argument("--preprocess-config",
                         default="config/preprocess.yaml",
@@ -323,70 +323,70 @@ def get_args():
                         type=float,
                         default=1e-3,
                         metavar='N',
-                        help='Learning rate')
+                        help='Learning rate for AdamW.')
     parser.add_argument('--batch-size',
                         type=int,
-                        default=64,
+                        default=128,
                         metavar='N',
                         help='Batch size')
     parser.add_argument('--depth',
                         type=int,
                         default=2,
-                        help='Encoder depth')
+                        help='Encoder depth. Default for tiny, small & base.')
     parser.add_argument('--block-depth',
                         type=int,
                         default=2,
-                        help='Decoder block depth')
+                        help='Decoder block depth. Default for tiny, small & base.')
     parser.add_argument('--n-blocks',
                         type=int,
-                        default=3,
-                        help='Decoder blocks')
+                        default=2,
+                        help='Decoder blocks. Default for tiny. Small & base: 3.')
     parser.add_argument('--reduction',
                         type=int,
-                        default=1,
-                        help='Embed dim reduction factor')
+                        default=4,
+                        help='Embed dim reduction factor. Default for tiny. Small: 2. Base: 1.')
     parser.add_argument('--head',
                         type=int,
-                        default=2,
-                        help='Number of head at layer 1')
+                        default=1,
+                        help='Number of transformer encoder head. Default for tiny & small. Base: 2.')
     parser.add_argument('--embed-dim',
                         type=int,
                         default=128,
-                        help='Embedding dim')
+                        help='Embedding or feature dim. To be reduced by --reduction.')
     parser.add_argument('--kernel-size',
                         type=int,
-                        default=5,
-                        help='Conv1d kernel size (Encoder)')
+                        default=3,
+                        help='Conv1d kernel size (Encoder). Default for tiny & small. Base is 5.')
     parser.add_argument('--decoder-kernel-size',
                         type=int,
-                        default=5,
-                        help='Conv1d kernel size (Decoder)')
+                        default=3,
+                        help='Conv1d kernel size (Decoder). Default for tiny. Small & base: 5.')
     parser.add_argument('--expansion',
                         type=int,
-                        default=2,
-                        help='MixFFN expansion')
+                        default=1,
+                        help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
                         default="outputs",
                         type=str,
                         help="Output folder")
-    parser.add_argument('--seed',
-                        type=int,
-                        default=0,
-                        metavar='N',
-                        help='Random seed')
+    #parser.add_argument('--seed',
+    #                    type=int,
+    #                    default=0,
+    #                    metavar='N',
+    #                    help='Random seed')
 
-    parser.add_argument('--mel-loss-weight',
-                        type=float,
-                        default=10.,
-                        help='Mel Loss weight')
-    parser.add_argument('--pitch-loss-weight',
-                        type=float,
-                        default=2.,
-                        help='Ptch Loss weight')
-    parser.add_argument('--energy-loss-weight',
-                        type=float,
-                        default=2.,
-                        help='Energy Loss weight')
+    #parser.add_argument('--mel-loss-weight',
+    #                    type=float,
+    #                    default=10.,
+    #                    help='Mel Loss weight')
+    #parser.add_argument('--pitch-loss-weight',
+    #                    type=float,
+    #                    default=1.,
+    #                    help='Ptch Loss weight')
+    #parser.add_argument('--energy-loss-weight',
+    #                    type=float,
+    #                    default=1.,
+    #                    help='Energy Loss weight')
 
     # use jit modules 
     parser.add_argument('--to-torchscript',
@@ -411,7 +411,7 @@ def get_args():
                         type=str,
                         help="path to model checkpoint file",)
     parser.add_argument("--wav-path",
-                        default="outputs",
+                        default="wav_outputs",
                         type=str,
                         help="path to wav file to be generated",)
     parser.add_argument("--wav-filename",
@@ -457,8 +457,8 @@ def get_args():
     
     args = parser.parse_args()
 
-    if args.seed == 0:
-        args.seed = random.randint(0, 1e3)
+    #if args.seed == 0:
+    #    args.seed = random.randint(0, 1e3)
 
     args.num_workers *= args.devices
 
