@@ -324,11 +324,17 @@ def get_args():
                         default=1e-3,
                         metavar='N',
                         help='Learning rate for AdamW.')
+        
     parser.add_argument('--batch-size',
                         type=int,
                         default=128,
                         metavar='N',
                         help='Batch size')
+    parser.add_argument('--dropout',
+                        type=float,
+                        default=0.1,
+                        help='Global dropout rate')   
+    
     parser.add_argument('--depth',
                         type=int,
                         default=2,
@@ -359,14 +365,14 @@ def get_args():
                         help='Conv1d kernel size (Encoder). Default for tiny & small. Base is 5.')
     parser.add_argument('--decoder-kernel-size',
                         type=int,
-                        default=3,
-                        help='Conv1d kernel size (Decoder). Default for tiny. Small & base: 5.')
+                        default=5,
+                        help='Conv1d kernel size (Decoder). Default for tiny. small & base: 5.')
     parser.add_argument('--expansion',
                         type=int,
                         default=1,
                         help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
-                        default="outputs",
+                        default="tiny_english",
                         type=str,
                         help="Output folder")
     #parser.add_argument('--seed',

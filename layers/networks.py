@@ -310,7 +310,8 @@ class PhonemeEncoder(nn.Module):
                  head=1, 
                  embed_dim=128, 
                  kernel_size=3, 
-                 expansion=1):
+                 expansion=1,
+                 dropout=_DROPOUT,):
         super().__init__()
 
         self.encoder = Encoder(depth=depth,
@@ -318,14 +319,15 @@ class PhonemeEncoder(nn.Module):
                                head=head, 
                                embed_dim=embed_dim, 
                                kernel_size=kernel_size, 
-                               expansion=expansion)
+                               expansion=expansion,
+                               dropout=dropout)
         
         dim = embed_dim // reduction
         self.fuse = Fuse(self.encoder.get_feature_dims(), kernel_size=kernel_size)
         self.feature_upsampler = FeatureUpsampler()
-        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats)
-        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats)
-        self.duration_decoder = AcousticDecoder(dim, duration=True)
+        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats, dropout=dropout)
+        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats, dropout=dropout)
+        self.duration_decoder = AcousticDecoder(dim, dropout=dropout, duration=True)
         
 
     def forward(self, x, train=False):
