@@ -332,7 +332,7 @@ def get_args():
                         help='Batch size')
     parser.add_argument('--dropout',
                         type=float,
-                        default=0.1,
+                        default=0.0,
                         help='Global dropout rate')   
     
     parser.add_argument('--depth',
@@ -365,7 +365,7 @@ def get_args():
                         help='Conv1d kernel size (Encoder). Default for tiny & small. Base is 5.')
     parser.add_argument('--decoder-kernel-size',
                         type=int,
-                        default=5,
+                        default=3,
                         help='Conv1d kernel size (Decoder). Default for tiny. small & base: 5.')
     parser.add_argument('--expansion',
                         type=int,

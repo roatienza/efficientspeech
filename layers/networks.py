@@ -5,7 +5,7 @@ from torch import nn
 from .blocks import MixFFN, SelfAttention
 from text.symbols import symbols
 
-_DROPOUT = 0.1
+_DROPOUT = 0.0
 
 class Encoder(nn.Module):
     """ Phoneme Encoder """
