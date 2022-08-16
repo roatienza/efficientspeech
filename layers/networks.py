@@ -38,6 +38,7 @@ class Encoder(nn.Module):
                         SelfAttention(dim_out, num_heads=head),
                         MixFFN(dim_out, expansion),
                         nn.LayerNorm(dim_out),
+                        nn.LayerNorm(dim_out),
                         ]))
         self.dropout = dropout
 
@@ -54,7 +55,7 @@ class Encoder(nn.Module):
         decoder_mask = None
         pool = 1
 
-        for merge3x3, merge1x1, attn, mixffn, norm in self.attn_blocks:
+        for merge3x3, merge1x1, attn, mixffn, norm1, norm2 in self.attn_blocks:
             # after each encoder block, merge features
             x = x.permute(0, 2, 1)
             x = merge3x3(x)
@@ -65,14 +66,14 @@ class Encoder(nn.Module):
                 pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             
             y, attn_mask = attn(x, mask=mask, pool=pool)
-            x = nn.Dropout(self.dropout)(norm(y + x))
+            x = nn.Dropout(self.dropout)(norm1(y + x))
             if attn_mask is not None:
                 x = x.masked_fill(attn_mask, 0)
                 if decoder_mask is None:
                     decoder_mask = attn_mask
            
             # Mix-FFN with skip connect
-            x = norm(mixffn(x) + x)
+            x = norm2(mixffn(x) + x)
             
             if attn_mask is not None:
                 x = x.masked_fill(attn_mask, 0)
