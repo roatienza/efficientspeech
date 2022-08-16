@@ -25,7 +25,8 @@ class Encoder(nn.Module):
         strides.insert(0, 1)
         
         self.embed = nn.Embedding(len(symbols) + 1, embed_dim, padding_idx=0)
-    
+        self.norm = nn.LayerNorm(embed_dim)
+
         self.attn_blocks = nn.ModuleList([])
         for dim_in, dim_out, head, kernel, stride, padding in zip(dim_ins, self.dim_outs,\
                                                                   heads, kernels, strides, paddings):
@@ -47,7 +48,7 @@ class Encoder(nn.Module):
 
     def forward(self, phoneme, mask=None):
         features = []
-        x = self.embed(phoneme) 
+        x = self.norm(self.embed(phoneme)) 
         # merge, attn and mixffn operates on n or seqlen dim
         # b = batch, n = sequence len, c = channel (1st layer is embedding)
         # (b, n, c)
