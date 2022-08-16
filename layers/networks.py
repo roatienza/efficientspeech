@@ -10,8 +10,8 @@ _DROPOUT = 0.0
 class Encoder(nn.Module):
     """ Phoneme Encoder """
 
-    def __init__(self, depth=2, embed_dim=128, kernel_size=5, \
-                 expansion=2, reduction=4, head=2, dropout=_DROPOUT,):
+    def __init__(self, depth=2, embed_dim=128, kernel_size=3, \
+                 expansion=1, reduction=4, head=1, dropout=_DROPOUT,):
         super().__init__()
 
         small_embed_dim = embed_dim // reduction
@@ -94,12 +94,12 @@ class AcousticDecoder(nn.Module):
 
         self.conv1 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm1 = nn.LayerNorm(dim)
-        self.dropout = dropout
         self.conv2 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm2 = nn.LayerNorm(dim)
         self.linear = nn.Linear(dim, 1)
         self.relu = nn.ReLU()
         self.duration = duration
+        self.dropout = dropout
 
         if pitch_stats is not None:
             pitch_min, pitch_max = pitch_stats
@@ -221,8 +221,7 @@ class FeatureUpsampler(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, fused_features, fused_masks, \
-                duration, max_mel_len=None): #, train=False):
+    def forward(self, fused_features, fused_masks, duration, max_mel_len=None):
         mel_len = list()
         features = list()
         masks = list()
@@ -258,7 +257,7 @@ class FeatureUpsampler(nn.Module):
 class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
-    def __init__(self, dim, kernel_size=3, n_mel_channels=80,
+    def __init__(self, dim, kernel_size=5, n_mel_channels=80,
                  n_blocks=2, block_depth=2, dropout=_DROPOUT,):
         super().__init__()
 
@@ -267,7 +266,7 @@ class MelDecoder(nn.Module):
         dim_x4 = 4*dim
         padding = kernel_size // 2
 
-        self.fuse = nn.Sequential(
+        self.proj = nn.Sequential(
             nn.Linear(dim_x4, dim_x2), nn.Tanh(), nn.LayerNorm(dim_x2),)
 
         self.blocks = nn.ModuleList([])
@@ -286,7 +285,7 @@ class MelDecoder(nn.Module):
         self.dropout = dropout
 
     def forward(self, features):
-        skip = self.fuse(features)
+        skip = self.proj(features)
         for convs, skip_norm in self.blocks:
             x = skip
             for conv, norm in convs:
@@ -386,7 +385,7 @@ class PhonemeEncoder(nn.Module):
                                                                fused_masks,
                                                                duration=duration_target,
                                                                max_mel_len=max_mel_len,)
-                                                               #train=train)
+    
         if mask is None:
             masks = None
 
