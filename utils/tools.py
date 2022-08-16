@@ -372,7 +372,7 @@ def get_args():
                         default=1,
                         help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
-                        default="tiny_english",
+                        default="good_english",
                         type=str,
                         help="Output folder")
     #parser.add_argument('--seed',
