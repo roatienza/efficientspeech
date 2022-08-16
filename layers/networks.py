@@ -31,7 +31,7 @@ class Encoder(nn.Module):
                                                                   heads, kernels, strides, paddings):
             self.attn_blocks.append(
                     nn.ModuleList([
-                        #deptwise separable convolution
+                        #deptwise separable convolution-like convolution
                         nn.Conv1d(dim_in, dim_in, kernel_size=kernel, stride=stride, \
                                   padding=padding, bias=False),
                         nn.Conv1d(dim_in, dim_out, kernel_size=1, bias=False), 
@@ -274,8 +274,9 @@ class MelDecoder(nn.Module):
             conv = nn.ModuleList([])
             for _ in range(block_depth):
                 conv.append(nn.ModuleList([nn.Sequential(\
-                        nn.Conv1d(dim_x2, dim_x2, kernel_size=kernel_size, padding=padding), \
-                        nn.Tanh(),),\
+                        nn.Conv1d(dim_x2, dim_x2, groups=dim_x2, kernel_size=kernel_size, padding=padding),\
+                        nn.Conv1d(dim_x2, dim_x2, kernel_size=1), \
+                        nn.Tanh(),),
                         nn.LayerNorm(dim_x2)]))
 
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))

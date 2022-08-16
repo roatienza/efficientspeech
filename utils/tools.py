@@ -365,7 +365,7 @@ def get_args():
                         help='Conv1d kernel size (Encoder). Default for tiny & small. Base is 5.')
     parser.add_argument('--decoder-kernel-size',
                         type=int,
-                        default=3,
+                        default=5,
                         help='Conv1d kernel size (Decoder). Default for tiny. small & base: 5.')
     parser.add_argument('--expansion',
                         type=int,
