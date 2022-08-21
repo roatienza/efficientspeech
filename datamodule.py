@@ -115,8 +115,6 @@ class LJSpeechDataset(Dataset):
         self.sort = sort
         self.drop_last = drop_last
 
-        
-
     def __len__(self):
         return len(self.text)
 

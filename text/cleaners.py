@@ -61,7 +61,9 @@ def collapse_whitespace(text):
     return re.sub(_whitespace_re, ' ', text)
 
 def dash_to_whitespace(text):
-    return re.sub('-', ' ', text)
+    text = re.sub('-', ' ', text)
+    text = collapse_whitespace(text)
+    return text
 
 def convert_to_ascii(text):
     return unidecode(text)
@@ -89,5 +91,4 @@ def english_cleaners(text):
     text = expand_numbers(text)
     text = expand_abbreviations(text)
     text = collapse_whitespace(text)
-    text = dash_to_whitespace(text)
     return text

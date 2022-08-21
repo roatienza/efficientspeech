@@ -195,7 +195,9 @@ class EfficientFSModule(LightningModule):
         pass
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.lr)
+        optimizer = AdamW(self.parameters(), lr=self.lr, weight_decay=1e-5)
+        # lamb optimizer
+        #optimizer = Lamb(optimizer, lr=self.lr)
         self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, \
                             warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
         return [optimizer], [self.scheduler]
