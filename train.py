@@ -62,8 +62,7 @@ if __name__ == "__main__":
                                   decoder_kernel_size=args.decoder_kernel_size,
                                   expansion=args.expansion, wav_path=args.out_folder,
                                   hifigan_checkpoint=args.hifigan_checkpoint,
-                                  infer_device=args.infer_device, dropout=args.dropout,
-                                  verbose=args.verbose)
+                                  infer_device=args.infer_device, verbose=args.verbose)
 
     if args.verbose:
         print_args(args)
