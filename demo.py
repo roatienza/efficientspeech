@@ -214,9 +214,9 @@ if __name__ == "__main__":
             else:
                 with torch.no_grad():
                     phoneme = torch.from_numpy(phoneme).int()
-                    wavs, duration, _ = pl_module({"phoneme": phoneme})
+                    wavs, lengths = pl_module({"phoneme": phoneme})
                     wavs = wavs.cpu().numpy()
-                    duration = duration.cpu().numpy()
+                    lengths = lengths.cpu().numpy()
 
             elapsed_time = time.time() - start_time
             wav = np.reshape(wavs, (-1, 1))
@@ -233,7 +233,7 @@ if __name__ == "__main__":
 
             sd.play(wav)
             sd.wait()
-            write_to_file(wavs, preprocess_config, lengths=duration,
+            write_to_file(wavs, preprocess_config, lengths=lengths,
                           wav_path=args.wav_path, filename=args.wav_filename)
 
         elif event == '-CLEAR-':
