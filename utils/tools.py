@@ -371,7 +371,7 @@ def get_args():
                         default=1,
                         help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
-                        default="good_english",
+                        default="tiny_english",
                         type=str,
                         help="Output folder")
     #parser.add_argument('--seed',
@@ -412,7 +412,7 @@ def get_args():
                         help="Inference device",)
     
     parser.add_argument("--checkpoint",
-                        default='checkpoints/good_english.ckpt',
+                        default='checkpoints/tiny_english.ckpt',
                         type=str,
                         help="path to model checkpoint file",)
     parser.add_argument("--wav-path",
