@@ -39,6 +39,52 @@ from synthesize import get_lexicon_and_g2p, text2phoneme
 
 #from scipy.io import wavfile
 
+def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args):
+    text = args.text.strip()
+    if text[-1] == ".":
+        text = text[:-1]
+    text += ". "
+    phoneme = np.array(
+        [text2phoneme(lexicon, g2p, text, preprocess_config)], dtype=np.int32)
+    start_time = time.time()
+    if is_onnx:
+        # onnx is 3.5x faster than pytorch models
+        phoneme_len = phoneme.shape[1]
+        n_append = args.onnx_insize // phoneme_len
+        phoneme = [phoneme] * (n_append + 1)
+        phoneme = np.concatenate(phoneme, axis=1)
+        phoneme = phoneme[:, :args.onnx_insize]
+
+        ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
+        outputs = ort_session.run(None, ort_inputs)
+        wavs = outputs[0]
+        hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
+        duration = outputs[2]
+        orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+        wavs = wavs[:, :orig_duration]
+        duration = [orig_duration]
+    else:
+        with torch.no_grad():
+            phoneme = torch.from_numpy(phoneme).int()
+            wavs, lengths = pl_module({"phoneme": phoneme})
+            wavs = wavs.cpu().numpy()
+            lengths = lengths.cpu().numpy()
+        
+    elapsed_time = time.time() - start_time
+    if is_onnx:
+        elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
+    wav = np.reshape(wavs, (-1, 1))
+
+    message = f"Synthesis time: {elapsed_time:.2f} sec"
+    wav_len = wav.shape[0] / sampling_rate
+    message += f"\nVoice length: {wav_len:.2f} sec"
+    real_time_factor = wav_len / elapsed_time
+    message += f"\nReal time factor: {real_time_factor:.2f}"
+    write_to_file(wavs, preprocess_config, lengths=lengths, \
+        wav_path=args.wav_path, filename=args.wav_filename)
+    print(message)
+    return wav, message
+
 if __name__ == "__main__":
     args = get_args()
     preprocess_config = yaml.load(
@@ -109,31 +155,9 @@ if __name__ == "__main__":
         #                            num_workers=args.num_workers)
         #trainer.test(pl_module, datamodule=datamodule)
         #exit(0)
-
-        args.text = args.text.strip()
-        if args.text[-1] == ".":
-            args.text = args.text[:-1]
-        args.text += ". "
-        phoneme = np.array(
-            [text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
-        start_time = time.time()
-        with torch.no_grad():
-            phoneme = torch.from_numpy(phoneme).int()
-            wavs, lengths = pl_module({"phoneme": phoneme})
-            wavs = wavs.cpu().numpy()
-            lengths = lengths.cpu().numpy()
-        
-        elapsed_time = time.time() - start_time
-        wav = np.reshape(wavs, (-1, 1))
-
-        message = f"Synthesis time: {elapsed_time:.2f} sec"
-        wav_len = wav.shape[0] / sampling_rate
-        message += f"\nVoice length: {wav_len:.2f} sec"
-        real_time_factor = wav_len / elapsed_time
-        message += f"\nReal time factor: {real_time_factor:.2f}"
-        write_to_file(wavs, preprocess_config, lengths=lengths,
-            wav_path=args.wav_path, filename=args.wav_filename)
-        print(message)
+        for _ in range(10):
+            tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+  
         exit(0)
 
 
@@ -186,55 +210,57 @@ if __name__ == "__main__":
         elif event == '-PLAY-':
             current_frame = 0
             args.text = multiline.get()
-            start_time = time.time()
+            wav, message = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+
+            #start_time = time.time()
             # remove start and end spaces from text
-            args.text = args.text.strip()
-            if args.text[-1] == ".":
-                args.text = args.text[:-1]
-            args.text += ". "
-            phoneme = np.array(
-                [text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
-            print(phoneme)
-            if is_onnx:
-                # onnx is 3.5x faster than pytorch models
-                phoneme_len = phoneme.shape[1]
-                n_append = args.onnx_insize // phoneme_len
-                phoneme = [phoneme] * (n_append + 1)
-                phoneme = np.concatenate(phoneme, axis=1)
-                phoneme = phoneme[:, :args.onnx_insize]
+            #args.text = args.text.strip()
+            #if args.text[-1] == ".":
+            #    args.text = args.text[:-1]
+            #args.text += ". "
+            #phoneme = np.array(
+            #    [text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
+            #print(phoneme)
+            #if is_onnx:
+            #    # onnx is 3.5x faster than pytorch models
+            #    phoneme_len = phoneme.shape[1]
+            #    n_append = args.onnx_insize // phoneme_len
+            #    phoneme = [phoneme] * (n_append + 1)
+            #    phoneme = np.concatenate(phoneme, axis=1)
+            #    phoneme = phoneme[:, :args.onnx_insize]
 
-                ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
-                outputs = ort_session.run(None, ort_inputs)
-                wavs = outputs[0]
-                hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
-                duration = outputs[2]
-                orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
-                wavs = wavs[:, :orig_duration]
-                duration = [orig_duration]
-            else:
-                with torch.no_grad():
-                    phoneme = torch.from_numpy(phoneme).int()
-                    wavs, lengths = pl_module({"phoneme": phoneme})
-                    wavs = wavs.cpu().numpy()
-                    lengths = lengths.cpu().numpy()
+            #    ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
+            #    outputs = ort_session.run(None, ort_inputs)
+            #    wavs = outputs[0]
+            #    hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
+            #    duration = outputs[2]
+            #    orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+            #    wavs = wavs[:, :orig_duration]
+            #    duration = [orig_duration]
+            #else:
+            #    with torch.no_grad():
+            #        phoneme = torch.from_numpy(phoneme).int()
+            #        wavs, lengths = pl_module({"phoneme": phoneme})
+            #        wavs = wavs.cpu().numpy()
+            #        lengths = lengths.cpu().numpy()
 
-            elapsed_time = time.time() - start_time
-            wav = np.reshape(wavs, (-1, 1))
-            if is_onnx:
-                elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
-            message = f"Synthesis time: {elapsed_time:.2f} sec"
-            wav_len = wav.shape[0] / sampling_rate
-            message += f"\nVoice length: {wav_len:.2f} sec"
-            real_time_factor = wav_len / elapsed_time
-            message += f"\nReal time factor: {real_time_factor:.2f}"
+            #elapsed_time = time.time() - start_time
+            #wav = np.reshape(wavs, (-1, 1))
+            #if is_onnx:
+            #    elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
+            #message = f"Synthesis time: {elapsed_time:.2f} sec"
+            #wav_len = wav.shape[0] / sampling_rate
+            #message += f"\nVoice length: {wav_len:.2f} sec"
+            #real_time_factor = wav_len / elapsed_time
+            #message += f"\nReal time factor: {real_time_factor:.2f}"
 
             g_window['-TIME-'].update(message)
             g_window.refresh()
 
             sd.play(wav)
             sd.wait()
-            write_to_file(wavs, preprocess_config, lengths=lengths,
-                          wav_path=args.wav_path, filename=args.wav_filename)
+            #write_to_file(wavs, preprocess_config, lengths=lengths,
+            #              wav_path=args.wav_path, filename=args.wav_filename)
 
         elif event == '-CLEAR-':
             multiline.update('')
