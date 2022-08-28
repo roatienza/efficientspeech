@@ -2,7 +2,6 @@ import os
 import json
 import time
 import argparse
-import random
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -366,7 +365,7 @@ def get_args():
     parser.add_argument('--decoder-kernel-size',
                         type=int,
                         default=5,
-                        help='Conv1d kernel size (Decoder). Default for tiny. small & base: 5.')
+                        help='Conv1d kernel size (Decoder). Default for tiny, small & base: 5.')
     parser.add_argument('--expansion',
                         type=int,
                         default=1,

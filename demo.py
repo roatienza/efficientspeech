@@ -86,6 +86,57 @@ if __name__ == "__main__":
             print(flop_count_table(flops))
             exit(0)
 
+    if args.text is not None:
+        #from datamodule import LJSpeechDataset
+        #dset = LJSpeechDataset('/home/rowel/github/roatienza/efficientspeech/preprocessed_data/LJSpeech/brown.txt',preprocess_config)
+        #raw_text, phoneme = dset.get_first()
+        #print("Raw Text", raw_text)
+        #print("Phonemes", phoneme)
+        #exit(0)
+        
+        #from pytorch_lightning import Trainer
+        #from pytorch_lightning.strategies.ddp import DDPStrategy
+        #from datamodule import LJSpeechDataModule
+        #trainer = Trainer(accelerator=args.accelerator, 
+        #              devices=args.devices,
+        #              precision=args.precision,
+        #              #strategy="ddp",
+        #              strategy = DDPStrategy(find_unused_parameters=False),
+        #              check_val_every_n_epoch=10,
+        #              max_epochs=args.max_epochs,)
+        #datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
+        #                            batch_size=args.batch_size,
+        #                            num_workers=args.num_workers)
+        #trainer.test(pl_module, datamodule=datamodule)
+        #exit(0)
+
+        args.text = args.text.strip()
+        if args.text[-1] == ".":
+            args.text = args.text[:-1]
+        args.text += ". "
+        phoneme = np.array(
+            [text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
+        start_time = time.time()
+        with torch.no_grad():
+            phoneme = torch.from_numpy(phoneme).int()
+            wavs, lengths = pl_module({"phoneme": phoneme})
+            wavs = wavs.cpu().numpy()
+            lengths = lengths.cpu().numpy()
+        
+        elapsed_time = time.time() - start_time
+        wav = np.reshape(wavs, (-1, 1))
+
+        message = f"Synthesis time: {elapsed_time:.2f} sec"
+        wav_len = wav.shape[0] / sampling_rate
+        message += f"\nVoice length: {wav_len:.2f} sec"
+        real_time_factor = wav_len / elapsed_time
+        message += f"\nReal time factor: {real_time_factor:.2f}"
+        write_to_file(wavs, preprocess_config, lengths=lengths,
+            wav_path=args.wav_path, filename=args.wav_filename)
+        print(message)
+        exit(0)
+
+
     import sounddevice as sd
     import PySimpleGUI as sg
     SIZE_X = 320

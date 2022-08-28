@@ -5,13 +5,12 @@ from torch import nn
 from .blocks import MixFFN, SelfAttention
 from text.symbols import symbols
 
-_DROPOUT = 0.0
 
 class Encoder(nn.Module):
     """ Phoneme Encoder """
 
     def __init__(self, depth=2, embed_dim=128, kernel_size=3, \
-                 expansion=1, reduction=4, head=1, dropout=_DROPOUT,):
+                 expansion=1, reduction=4, head=1,):
         super().__init__()
 
         small_embed_dim = embed_dim // reduction
@@ -40,7 +39,6 @@ class Encoder(nn.Module):
                         nn.LayerNorm(dim_out),
                         nn.LayerNorm(dim_out),
                         ]))
-        self.dropout = dropout
 
     def get_feature_dims(self):
         return self.dim_outs
@@ -66,7 +64,7 @@ class Encoder(nn.Module):
                 pool = int(torch.round(torch.tensor([n / x.shape[-2]], requires_grad=False)).item())
             
             y, attn_mask = attn(x, mask=mask, pool=pool)
-            x = nn.Dropout(self.dropout)(norm1(y + x))
+            x = norm1(y + x)
             if attn_mask is not None:
                 x = x.masked_fill(attn_mask, 0)
                 if decoder_mask is None:
@@ -87,7 +85,7 @@ class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Predictor """
 
     def __init__(self, dim, pitch_stats=None, energy_stats=None, \
-                 n_mel_channels=80, dropout=_DROPOUT, duration=False):
+                 n_mel_channels=80, duration=False):
         super().__init__()
         
         self.n_mel_channels = n_mel_channels
@@ -99,7 +97,6 @@ class AcousticDecoder(nn.Module):
         self.linear = nn.Linear(dim, 1)
         self.relu = nn.ReLU()
         self.duration = duration
-        self.dropout = dropout
 
         if pitch_stats is not None:
             pitch_min, pitch_max = pitch_stats
@@ -147,13 +144,12 @@ class AcousticDecoder(nn.Module):
         y = fused_features.permute(0, 2, 1)
         y = self.conv1(y)
         y = y.permute(0, 2, 1)
-        y = nn.Dropout(self.dropout)(self.norm1(y))
+        y = self.norm1(y)
         y = y.permute(0, 2, 1)
         y = self.conv2(y)
         y = y.permute(0, 2, 1)
         y = self.norm2(y)
         features = y
-        y = nn.Dropout(self.dropout)(y)
         y = self.linear(y)
         if self.duration:
             y = self.relu(y)
@@ -258,7 +254,7 @@ class MelDecoder(nn.Module):
     """ Mel Spectrogram Decoder """
 
     def __init__(self, dim, kernel_size=5, n_mel_channels=80,
-                 n_blocks=2, block_depth=2, dropout=_DROPOUT,):
+                 n_blocks=2, block_depth=2,):
         super().__init__()
 
         self.n_mel_channels = n_mel_channels
@@ -282,7 +278,7 @@ class MelDecoder(nn.Module):
             self.blocks.append(nn.ModuleList([conv, nn.LayerNorm(dim_x2)]))
 
         self.mel_linear = nn.Linear(dim_x2, self.n_mel_channels)
-        self.dropout = dropout
+
 
     def forward(self, features):
         skip = self.proj(features)
@@ -290,7 +286,7 @@ class MelDecoder(nn.Module):
             x = skip
             for conv, norm in convs:
                 x = conv(x.permute(0, 2, 1))
-                x = nn.Dropout(self.dropout)(norm(x.permute(0, 2, 1)))
+                x = norm(x.permute(0, 2, 1))
 
             skip = skip_norm(x + skip)
 
@@ -311,8 +307,7 @@ class PhonemeEncoder(nn.Module):
                  head=1, 
                  embed_dim=128, 
                  kernel_size=3, 
-                 expansion=1,
-                 dropout=_DROPOUT,):
+                 expansion=1,):
         super().__init__()
 
         self.encoder = Encoder(depth=depth,
@@ -320,15 +315,14 @@ class PhonemeEncoder(nn.Module):
                                head=head, 
                                embed_dim=embed_dim, 
                                kernel_size=kernel_size, 
-                               expansion=expansion,
-                               dropout=dropout)
+                               expansion=expansion,)
         
         dim = embed_dim // reduction
         self.fuse = Fuse(self.encoder.get_feature_dims(), kernel_size=kernel_size)
         self.feature_upsampler = FeatureUpsampler()
-        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats, dropout=dropout)
-        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats, dropout=dropout)
-        self.duration_decoder = AcousticDecoder(dim, dropout=dropout, duration=True)
+        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats)
+        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats)
+        self.duration_decoder = AcousticDecoder(dim, duration=True)
         
 
     def forward(self, x, train=False):
@@ -424,5 +418,5 @@ class Phoneme2Mel(nn.Module):
         if train: 
             return pred
 
-        return mel, pred["mel_len"], pred["duration"]
+        return mel, pred["mel_len"] #, pred["duration"]
 

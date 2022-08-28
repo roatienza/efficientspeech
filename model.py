@@ -45,7 +45,7 @@ class EfficientFSModule(LightningModule):
                  depth=2, n_blocks=2, block_depth=2, reduction=4, head=1,
                  embed_dim=128, kernel_size=3, decoder_kernel_size=3, expansion=1,
                  wav_path="wavs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
-                 infer_device=None, dropout=0.1, verbose=False):
+                 infer_device=None, verbose=False):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
@@ -66,11 +66,10 @@ class EfficientFSModule(LightningModule):
                                          head=head,
                                          embed_dim=embed_dim,
                                          kernel_size=kernel_size,
-                                         expansion=expansion,
-                                         dropout=dropout,)
+                                         expansion=expansion,)
 
         mel_decoder = MelDecoder(dim=embed_dim//reduction, kernel_size=decoder_kernel_size,
-                                 n_blocks=n_blocks, block_depth=block_depth, dropout=dropout)
+                                 n_blocks=n_blocks, block_depth=block_depth)
 
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
@@ -82,10 +81,10 @@ class EfficientFSModule(LightningModule):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        mel, mel_len, duration = self.phoneme2mel(batch, train=False)
+        mel, mel_len = self.phoneme2mel(batch, train=False)
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, mel_len, duration
+        return wav, mel_len #, duration
 
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
@@ -161,9 +160,10 @@ class EfficientFSModule(LightningModule):
 
     def test_step(self, batch, batch_idx):
         # TODO: use predict step for wav file generation
-        if batch_idx==0 and self.current_epoch>1:
+
+        if batch_idx==0 and self.current_epoch>1 :
             x, y = batch
-            wavs, lengths, _ = self.forward(x)
+            wavs, lengths = self.forward(x)
             wavs = wavs.cpu().numpy()
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
                 wav_path=self.wav_path, filename="prediction")
@@ -196,8 +196,6 @@ class EfficientFSModule(LightningModule):
 
     def configure_optimizers(self):
         optimizer = AdamW(self.parameters(), lr=self.lr, weight_decay=1e-5)
-        # lamb optimizer
-        #optimizer = Lamb(optimizer, lr=self.lr)
         self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, \
                             warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
         return [optimizer], [self.scheduler]
