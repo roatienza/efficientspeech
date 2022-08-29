@@ -45,7 +45,7 @@ class EfficientFSModule(LightningModule):
                  depth=2, n_blocks=2, block_depth=2, reduction=4, head=1,
                  embed_dim=128, kernel_size=3, decoder_kernel_size=3, expansion=1,
                  wav_path="wavs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
-                 infer_device=None, verbose=False):
+                 infer_device=None, dropout=0.0, verbose=False):
         super(EfficientFSModule, self).__init__()
 
         self.preprocess_config = preprocess_config
@@ -66,7 +66,8 @@ class EfficientFSModule(LightningModule):
                                          head=head,
                                          embed_dim=embed_dim,
                                          kernel_size=kernel_size,
-                                         expansion=expansion,)
+                                         expansion=expansion,
+                                         dropout=dropout)
 
         mel_decoder = MelDecoder(dim=embed_dim//reduction, kernel_size=decoder_kernel_size,
                                  n_blocks=n_blocks, block_depth=block_depth)

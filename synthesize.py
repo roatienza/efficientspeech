@@ -27,7 +27,7 @@ def get_lexicon_and_g2p(preprocess_config):
     return lexicon, g2p
 
 
-def text2phoneme(lexicon, g2p, text, preprocess_config):
+def text2phoneme(lexicon, g2p, text, preprocess_config, verbose=False):
     text = text.rstrip(punctuation)
 
     lang = preprocess_config["preprocessing"]["text"]["language"]
@@ -44,9 +44,9 @@ def text2phoneme(lexicon, g2p, text, preprocess_config):
     phones = re.sub(r"\{[^\w\s]?\}", "{sp}", phones)
     phones = phones.replace("}{", " ")
 
-
-    print("Raw Text Sequence: {}".format(text))
-    print("Phoneme Sequence: {}".format(phones))
+    if verbose:
+        print("Raw Text Sequence: {}".format(text))
+        print("Phoneme Sequence: {}".format(phones))
 
     sequence = np.array(
         text_to_sequence(

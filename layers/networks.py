@@ -85,7 +85,7 @@ class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Predictor """
 
     def __init__(self, dim, pitch_stats=None, energy_stats=None, \
-                 n_mel_channels=80, duration=False):
+                 n_mel_channels=80, duration=False, dropout=0.0,):
         super().__init__()
         
         self.n_mel_channels = n_mel_channels
@@ -95,9 +95,9 @@ class AcousticDecoder(nn.Module):
         self.conv2 = nn.Sequential(nn.Conv1d(dim, dim, kernel_size=3, padding=1), nn.ReLU())
         self.norm2 = nn.LayerNorm(dim)
         self.linear = nn.Linear(dim, 1)
-        self.relu = nn.ReLU()
         self.duration = duration
-
+        self.dropout = dropout
+        
         if pitch_stats is not None:
             pitch_min, pitch_max = pitch_stats
             self.pitch_bins = nn.Parameter(torch.linspace(pitch_min, pitch_max, dim - 1),\
@@ -144,16 +144,18 @@ class AcousticDecoder(nn.Module):
         y = fused_features.permute(0, 2, 1)
         y = self.conv1(y)
         y = y.permute(0, 2, 1)
-        y = self.norm1(y)
+        y = nn.ReLU()(self.norm1(y))
+        y = nn.Dropout(self.dropout)(y)
         y = y.permute(0, 2, 1)
         y = self.conv2(y)
         y = y.permute(0, 2, 1)
-        y = self.norm2(y)
-        features = y
+        features = self.norm2(y)
+        y = nn.Dropout(self.dropout)(features)
         y = self.linear(y)
         if self.duration:
-            y = self.relu(y)
+            y = nn.ReLU()(y)
             return y, features
+
         return y
 
 
@@ -307,7 +309,8 @@ class PhonemeEncoder(nn.Module):
                  head=1, 
                  embed_dim=128, 
                  kernel_size=3, 
-                 expansion=1,):
+                 expansion=1,
+                 dropout=0.0):
         super().__init__()
 
         self.encoder = Encoder(depth=depth,
@@ -320,9 +323,9 @@ class PhonemeEncoder(nn.Module):
         dim = embed_dim // reduction
         self.fuse = Fuse(self.encoder.get_feature_dims(), kernel_size=kernel_size)
         self.feature_upsampler = FeatureUpsampler()
-        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats)
-        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats)
-        self.duration_decoder = AcousticDecoder(dim, duration=True)
+        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats, dropout=dropout)
+        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats, dropout=dropout)
+        self.duration_decoder = AcousticDecoder(dim, duration=True, dropout=dropout)
         
 
     def forward(self, x, train=False):

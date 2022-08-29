@@ -39,13 +39,13 @@ from synthesize import get_lexicon_and_g2p, text2phoneme
 
 #from scipy.io import wavfile
 
-def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args):
+def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False):
     text = args.text.strip()
     if text[-1] == ".":
         text = text[:-1]
     text += ". "
     phoneme = np.array(
-        [text2phoneme(lexicon, g2p, text, preprocess_config)], dtype=np.int32)
+        [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=verbose)], dtype=np.int32)
     start_time = time.time()
     if is_onnx:
         # onnx is 3.5x faster than pytorch models
@@ -82,8 +82,10 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args):
     message += f"\nReal time factor: {real_time_factor:.2f}"
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
-    print(message)
-    return wav, message
+    
+    if verbose:
+        print(message)
+    return wav, message, phoneme
 
 if __name__ == "__main__":
     args = get_args()
@@ -107,20 +109,35 @@ if __name__ == "__main__":
     else:
         pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
 
-        pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
-                                                   lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                                   depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                                   reduction=args.reduction, head=args.head,
-                                                   embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+        pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
+                                                   preprocess_config=preprocess_config,
+                                                   lr=args.lr, 
+                                                   warmup_epochs=args.warmup_epochs, 
+                                                   max_epochs=args.max_epochs,
+                                                   depth=args.depth, 
+                                                   n_blocks=args.n_blocks, 
+                                                   block_depth=args.block_depth,
+                                                   reduction=args.reduction, 
+                                                   head=args.head,
+                                                   embed_dim=args.embed_dim, 
+                                                   kernel_size=args.kernel_size,
                                                    decoder_kernel_size=args.decoder_kernel_size,
                                                    expansion=args.expansion,
                                                    hifigan_checkpoint=args.hifigan_checkpoint,
-                                                   infer_device=args.infer_device,
+                                                   infer_device=args.infer_device, 
+                                                   dropout=args.dropout,
                                                    verbose=args.verbose)
         pl_module.eval()
         if args.benchmark:
+            if args.text is None:
+                print("supply to convert to speech using --text")
+                exit(1)
             from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
-            phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
+            # warmup
+            for _ in range(10):
+                _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+            _, _, phoneme = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
+            #phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
             with torch.no_grad():
                 phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
                 #wavs, duration, _ = pl_module({"phoneme": phoneme})
@@ -133,31 +150,7 @@ if __name__ == "__main__":
             exit(0)
 
     if args.text is not None:
-        #from datamodule import LJSpeechDataset
-        #dset = LJSpeechDataset('/home/rowel/github/roatienza/efficientspeech/preprocessed_data/LJSpeech/brown.txt',preprocess_config)
-        #raw_text, phoneme = dset.get_first()
-        #print("Raw Text", raw_text)
-        #print("Phonemes", phoneme)
-        #exit(0)
-        
-        #from pytorch_lightning import Trainer
-        #from pytorch_lightning.strategies.ddp import DDPStrategy
-        #from datamodule import LJSpeechDataModule
-        #trainer = Trainer(accelerator=args.accelerator, 
-        #              devices=args.devices,
-        #              precision=args.precision,
-        #              #strategy="ddp",
-        #              strategy = DDPStrategy(find_unused_parameters=False),
-        #              check_val_every_n_epoch=10,
-        #              max_epochs=args.max_epochs,)
-        #datamodule = LJSpeechDataModule(preprocess_config=preprocess_config,
-        #                            batch_size=args.batch_size,
-        #                            num_workers=args.num_workers)
-        #trainer.test(pl_module, datamodule=datamodule)
-        #exit(0)
-        for _ in range(10):
-            tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
-  
+        tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
         exit(0)
 
 
@@ -210,7 +203,7 @@ if __name__ == "__main__":
         elif event == '-PLAY-':
             current_frame = 0
             args.text = multiline.get()
-            wav, message = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+            wav, message, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
 
             #start_time = time.time()
             # remove start and end spaces from text
