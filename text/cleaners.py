@@ -39,7 +39,6 @@ _abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in 
     ('ltd', 'limited'),
     ('col', 'colonel'),
     ('ft', 'fort'),
-    ('fbi', 'f b i'),
 ]]
 
 
@@ -61,8 +60,7 @@ def collapse_whitespace(text):
     return re.sub(_whitespace_re, ' ', text)
 
 def dash_to_whitespace(text):
-    text = re.sub('-', ' ', text)
-    text = collapse_whitespace(text)
+    text = text.replace('-', ' ')
     return text
 
 def convert_to_ascii(text):
