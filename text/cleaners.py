@@ -88,6 +88,5 @@ def english_cleaners(text):
     text = lowercase(text)
     text = expand_numbers(text)
     text = expand_abbreviations(text)
-    text = dash_to_whitespace(text)
     text = collapse_whitespace(text)
     return text

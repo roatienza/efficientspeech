@@ -41,6 +41,7 @@ from synthesize import get_lexicon_and_g2p, text2phoneme
 
 def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False):
     text = args.text.strip()
+    text = text.replace('-', ' ')
     if text[-1] == ".":
         text = text[:-1]
     text += ". "
