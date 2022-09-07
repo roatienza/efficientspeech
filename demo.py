@@ -128,8 +128,8 @@ if __name__ == "__main__":
                                                    infer_device=args.infer_device, 
                                                    dropout=args.dropout,
                                                    verbose=args.verbose)
-        #print(pl_module.phoneme2mel.encoder)
-        #exit(0)
+        print(pl_module.phoneme2mel.decoder)
+        exit(0)
         pl_module.eval()
         if args.benchmark:
             if args.text is None:
