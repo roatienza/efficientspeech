@@ -1,3 +1,9 @@
+'''
+
+Reference code for FastSpeech2: https://github.com/ming024/FastSpeech2
+
+'''
+
 
 import torch
 import torch.nn.functional as F

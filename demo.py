@@ -66,8 +66,8 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
         duration = [orig_duration]
     else:
         with torch.no_grad():
-            phoneme = torch.from_numpy(phoneme).int()
-            wavs, lengths = pl_module({"phoneme": phoneme})
+            phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
+            wavs, lengths, mel_times = pl_module({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
             lengths = lengths.cpu().numpy()
         
@@ -81,12 +81,15 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     message += f"\nVoice length: {wav_len:.2f} sec"
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
+    
+    mel_rtf = wav_len / mel_times
+
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
     if verbose:
         print(message)
-    return wav, message, phoneme
+    return wav, message, phoneme, mel_rtf, wav_len, real_time_factor
 
 if __name__ == "__main__":
     args = get_args()
@@ -128,25 +131,65 @@ if __name__ == "__main__":
                                                    infer_device=args.infer_device, 
                                                    dropout=args.dropout,
                                                    verbose=args.verbose)
-        print(pl_module.phoneme2mel.decoder)
-        exit(0)
+        #print(pl_module.phoneme2mel.decoder)
+        #exit(0)
+        pl_module = pl_module.to(args.infer_device)
         pl_module.eval()
         if args.benchmark:
+            from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
             if args.text is None:
                 print("supply to convert to speech using --text")
                 exit(1)
-            from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
+
+            # test if a file exists and read all text
+            import os.path
+            from os import path
+            texts = None
+            if path.exists(args.text):
+                with open(args.text, 'r') as f:
+                    texts = f.read()
+
+                texts = texts.splitlines()
+                
+
+            # read one line at a time
+            if texts is not None:
+                args.text = "the quick brown fox jumps over the lazy dog"
+                for _ in range(10):
+                    _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+                
+                mel_rtfs = []
+                rtf = []
+                all_flops = []
+                voice_lens = []
+                for text in texts:
+                    args.text = text
+                    _, _, phoneme, mel_rtf, wav_len, real_time_factor \
+                         = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=args.verbose)
+                    mel_rtfs.append(mel_rtf)
+                    rtf.append(real_time_factor)
+                    voice_lens.append(wav_len)
+                    #flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
+                    #all_flops.append(flops.total())
+
+                print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
+                print(f"Average real time factor: {np.mean(rtf):.2f}")
+                print(f"Average voice length: {np.mean(voice_lens):.2f} sec")
+                #print(f"Average end-to-end flops: {np.mean(all_flops):.2f}")
+                exit(0)
+
+           
             # warmup
             for _ in range(10):
                 _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
-            _, _, phoneme = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
-            #phoneme = np.array([text2phoneme(lexicon, g2p, args.text, preprocess_config)], dtype=np.int32)
+
+            _, _, phoneme, _, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
+
             with torch.no_grad():
-                phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
-                #wavs, duration, _ = pl_module({"phoneme": phoneme})
-                pl_module = pl_module.to(args.infer_device)
+                #phoneme = phoneme.int().to(args.infer_device)
                 flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
                 param = parameter_count(pl_module)
+
             print("FLOPS: {:,}".format(flops.total()))
             print("Parameters: {:,}".format(param[""]))
             print(flop_count_table(flops))
