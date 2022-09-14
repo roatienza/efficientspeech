@@ -67,7 +67,7 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     else:
         with torch.no_grad():
             phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
-            wavs, lengths, mel_times = pl_module({"phoneme": phoneme})
+            wavs, lengths = pl_module({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
             lengths = lengths.cpu().numpy()
         
@@ -82,14 +82,14 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
     
-    mel_rtf = wav_len / mel_times
+    #mel_rtf = wav_len / mel_times
 
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
     if verbose:
         print(message)
-    return wav, message, phoneme, mel_rtf, wav_len, real_time_factor
+    return wav, message, phoneme, wav_len, real_time_factor
 
 if __name__ == "__main__":
     args = get_args()
@@ -183,7 +183,7 @@ if __name__ == "__main__":
             for _ in range(10):
                 _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
 
-            _, _, phoneme, _, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
+            _, _, phoneme, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
 
             with torch.no_grad():
                 #phoneme = phoneme.int().to(args.infer_device)

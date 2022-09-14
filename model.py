@@ -83,12 +83,12 @@ class EfficientFSModule(LightningModule):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        start_time = time.time()
+        #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
-        elapsed_time = time.time() - start_time
+        #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, mel_len, elapsed_time
+        return wav, mel_len #, elapsed_time
 
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
