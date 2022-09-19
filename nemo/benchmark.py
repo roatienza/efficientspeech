@@ -109,11 +109,13 @@ def synthesize(spec_generator, vocoder, text, sampling_rate, is_tacotron2=False)
         
         audio = vocoder.convert_spectrogram_to_audio(spec=spectrogram)
         #audio = audio.to('cpu').detach().numpy()[0]
-        audio = audio.cpu().numpy()[0]
+        #audio = audio.cpu().numpy()[0]
         #print("audio:", audio.shape)
+    
+        audio_len = audio.squeeze().shape[0]
         elapsed_time_total = time.time() - start_time
 
-        wav_len = audio.shape[0] / sampling_rate
+        wav_len = audio_len / sampling_rate
         mel_rtf = wav_len / elapsed_time
         rtf = wav_len / elapsed_time_total
 
@@ -162,7 +164,7 @@ if __name__ == "__main__":
             for _ in range(10):
                 _, _, _, audio = synthesize(spec_generator, vocoder, sample_text, sampling_rate, is_tacotron2=is_tacotron2)
             _, _, _, audio = synthesize(spec_generator, vocoder, file_text[0], sampling_rate, is_tacotron2=is_tacotron2)    
-            sf.write("speech.wav", audio, sampling_rate)
+            #sf.write("speech.wav", audio, sampling_rate)
             rtfs = []
             mel_rtfs = []
             voice_lens = []
@@ -177,7 +179,7 @@ if __name__ == "__main__":
             print(f"Average real time factor: {np.mean(rtf):.6f}")
             print(f"Average voice length: {np.mean(voice_lens):.2f} sec")
             print("# of audio", len(voice_lens))
-            sf.write("speech128.wav", audio, sampling_rate)
+            #sf.write("speech128.wav", audio, sampling_rate)
 
     else:
         mel_model = tts(model_name=args.tts, device=args.device).eval()
