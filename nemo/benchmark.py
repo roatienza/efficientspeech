@@ -108,7 +108,8 @@ def synthesize(spec_generator, vocoder, text, sampling_rate, is_tacotron2=False)
         elapsed_time = time.time() -start_time
         
         audio = vocoder.convert_spectrogram_to_audio(spec=spectrogram)
-        audio = audio.to('cpu').detach().numpy()[0]
+        #audio = audio.to('cpu').detach().numpy()[0]
+        audio = audio.cpu().numpy()[0]
         #print("audio:", audio.shape)
         elapsed_time_total = time.time() - start_time
 
