@@ -28,7 +28,8 @@ class tts(torch.nn.Module):
     def forward(self, x):
         if "tacotron2" in self.model_name:
             token_embedding = self.model.text_embedding(x).transpose(1, 2)
-            token_len = torch.tensor([len(i) for i in x]).to(self.device)
+            #token_len = torch.tensor([len(i) for i in x]).to(self.device)
+            token_len = np.array([len(i) for i in x])
             encoder_embedding = self.model.encoder(token_embedding=token_embedding, token_len=token_len)
             #print("encoder", encoder_embedding.device)
             # print tacoder decoder device
