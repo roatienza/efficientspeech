@@ -164,15 +164,16 @@ if __name__ == "__main__":
                 voice_lens = []
                 for text in texts:
                     args.text = text
-                    _, _, phoneme, mel_rtf, wav_len, real_time_factor \
+                    #_, _, phoneme, mel_rtf, wav_len, real_time_factor \
+                    wav, message, phoneme, wav_len, real_time_factor \
                          = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=args.verbose)
-                    mel_rtfs.append(mel_rtf)
+                    #mel_rtfs.append(mel_rtf)
                     rtf.append(real_time_factor)
                     voice_lens.append(wav_len)
                     #flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
                     #all_flops.append(flops.total())
 
-                print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
+                #print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
                 print(f"Average real time factor: {np.mean(rtf):.2f}")
                 print(f"Average voice length: {np.mean(voice_lens):.2f} sec")
                 #print(f"Average end-to-end flops: {np.mean(all_flops):.2f}")
