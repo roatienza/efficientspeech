@@ -412,7 +412,7 @@ def get_args():
                         help="Inference device",)
     
     parser.add_argument("--checkpoint",
-                        default='checkpoints/tiny_english.ckpt',
+                        default='checkpoints/tiny_english_drp0.1.ckpt',
                         type=str,
                         help="path to model checkpoint file",)
     parser.add_argument("--wav-path",

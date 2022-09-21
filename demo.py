@@ -1,6 +1,10 @@
 '''
 EfficientSpeech Text to Speech (TTS) demo.
 
+Benchmarking:
+python3 demo.py --benchmark --text tiny_english/prediction.txt --infer-device cuda
+
+
 To use speaker with GUI interface, run:
     (Tagalog)
     ONNX: 
@@ -31,6 +35,10 @@ import torch
 import yaml
 import time
 import numpy as np
+import soundfile as sf
+import numpy as np
+import os
+import hashlib
 
 
 from model import EfficientFSModule
@@ -82,6 +90,7 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
     
+    # to get mel_times, edit model.py predict_step() to return the timing information
     #mel_rtf = wav_len / mel_times
 
     write_to_file(wavs, preprocess_config, lengths=lengths, \
@@ -139,31 +148,36 @@ if __name__ == "__main__":
             from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
             if args.text is None:
                 print("supply to convert to speech using --text")
+                print("--text may be a single sentence or a file containing multiple sentences")
                 exit(1)
 
             # test if a file exists and read all text
-            import os.path
-            from os import path
             texts = None
-            if path.exists(args.text):
+            if os.path.exists(args.text):
                 with open(args.text, 'r') as f:
                     texts = f.read()
 
                 texts = texts.splitlines()
                 
+            # create a directory to store the audio files
+            args.tts = "tts_efficentspeech"
+            if not os.path.exists(args.tts):
+                os.mkdir(args.tts)
 
             # read one line at a time
             if texts is not None:
                 args.text = "the quick brown fox jumps over the lazy dog"
+                # warm up to initialze the model and cache
                 for _ in range(10):
                     _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
                 
-                mel_rtfs = []
+                #mel_rtfs = []
                 rtf = []
                 all_flops = []
                 voice_lens = []
                 for text in texts:
                     args.text = text
+
                     #_, _, phoneme, mel_rtf, wav_len, real_time_factor \
                     wav, message, phoneme, wav_len, real_time_factor \
                          = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=args.verbose)
@@ -172,6 +186,11 @@ if __name__ == "__main__":
                     voice_lens.append(wav_len)
                     #flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
                     #all_flops.append(flops.total())
+                    # create a hash of text variable
+                    hash_object = hashlib.md5(text.encode())
+                    # append the hash to the filename
+                    filename = os.path.join(args.tts, hash_object.hexdigest() + ".wav")
+                    sf.write(filename, wav, sampling_rate)
 
                 #print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
                 print(f"Average real time factor: {np.mean(rtf):.2f}")
