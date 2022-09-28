@@ -120,7 +120,8 @@ if __name__ == "__main__":
         ort_session = onnxruntime.InferenceSession(args.checkpoint)
         is_onnx = True
     else:
-        pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
+        pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device,
+                                        hifigan_checkpoint=args.hifigan_checkpoint,)
 
         pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
                                                    preprocess_config=preprocess_config,
