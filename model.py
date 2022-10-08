@@ -86,6 +86,20 @@ class EfficientFSModule(LightningModule):
         #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
         print("mel shape:", mel.shape)
+        mel_np = mel[0].cpu().detach().numpy()
+        import numpy as np
+        import librosa
+        import matplotlib.pyplot as plt
+        # plot mel spectrogram
+        plt.figure(figsize=(10, 4))
+        librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
+        plt.colorbar(format='%+2.0f dB')
+        plt.title('Mel spectrogram')
+        plt.tight_layout()
+        plt.show()
+        # save mel spectrogram plot
+        plt.savefig("mel.png")
+
         #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
