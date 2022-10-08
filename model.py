@@ -104,6 +104,7 @@ class EfficientFSModule(LightningModule):
         wav = self.hifigan(mel).squeeze(1)
 
         import librosa
+        import librosa.display
         import numpy as np
         wavs = wav.cpu().numpy()
         lengths = mel_len.cpu().numpy()
