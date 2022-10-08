@@ -100,9 +100,10 @@ class EfficientFSModule(LightningModule):
         plt.title('Mel spectrogram')
         plt.tight_layout()
         plt.imshow(mel_np)
+        plt.savefig("mel.png")
         plt.show()
         # save mel spectrogram plot
-        plt.savefig("mel.png")
+        
 
         #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
