@@ -107,7 +107,7 @@ class EfficientFSModule(LightningModule):
         import librosa.display
         import numpy as np
         wavs = wav.cpu().numpy()
-        wavs = np.reshape(wavs, (-1, 1))
+        wavs = np.reshape(wavs, (-1, ))
         print("wav shape:", wavs.shape)
         S = librosa.feature.melspectrogram(wavs, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
         S_DB = librosa.power_to_db(S, ref=np.max)
