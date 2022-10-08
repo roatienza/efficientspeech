@@ -85,6 +85,7 @@ class EfficientFSModule(LightningModule):
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
+        print("mel shape:", mel.shape)
         #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
