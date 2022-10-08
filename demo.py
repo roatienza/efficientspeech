@@ -75,7 +75,8 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     else:
         with torch.no_grad():
             phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
-            wavs, lengths, elapsed_time_mels = pl_module({"phoneme": phoneme})
+            #wavs, lengths, elapsed_time_mels = pl_module({"phoneme": phoneme})
+            wavs, lengths = pl_module({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
             lengths = lengths.cpu().numpy()
         
@@ -91,14 +92,15 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     message += f"\nReal time factor: {real_time_factor:.2f}"
     
     # to get mel_times, edit model.py predict_step() to return the timing information
-    mel_rtf = wav_len / elapsed_time_mels
+    # mel_rtf = wav_len / elapsed_time_mels
 
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
     if verbose:
         print(message)
-    return wav, message,  phoneme, mel_rtf, wav_len, real_time_factor
+    #return wav, message,  phoneme, mel_rtf, wav_len, real_time_factor
+    return wav, message, phoneme, wav_len, real_time_factor
 
 if __name__ == "__main__":
     args = get_args()
@@ -121,7 +123,7 @@ if __name__ == "__main__":
         is_onnx = True
     else:
         pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device,
-                                        hifigan_checkpoint=args.hifigan_checkpoint,)
+                                      hifigan_checkpoint=args.hifigan_checkpoint,)
 
         pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
                                                    preprocess_config=preprocess_config,
@@ -179,12 +181,10 @@ if __name__ == "__main__":
                 for text in texts:
                     args.text = text
 
-                    #wav, message, phoneme, wav_len, real_time_factor \
-                    
-                    wav, _, phoneme, mel_rtf, wav_len, real_time_factor \
+                    wav, _, phoneme,  wav_len, real_time_factor \
                          = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=args.verbose)
                     
-                    mel_rtfs.append(mel_rtf)
+                    #mel_rtfs.append(mel_rtf)
                     rtf.append(real_time_factor)
                     voice_lens.append(wav_len)
                     #flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
@@ -197,7 +197,7 @@ if __name__ == "__main__":
                     # copy file from /tmp to current directory
                     
 
-                print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
+                #print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
                 print(f"Average real time factor: {np.mean(rtf):.2f}")
                 print(f"Average voice length: {np.mean(voice_lens):.2f} sec")
                 #print(f"Average end-to-end flops: {np.mean(all_flops):.2f}")
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         elif event == '-PLAY-':
             current_frame = 0
             args.text = multiline.get()
-            wav, message, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+            wav, message, _, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
 
             g_window['-TIME-'].update(message)
             g_window.refresh()
