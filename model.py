@@ -91,10 +91,12 @@ class EfficientFSModule(LightningModule):
         #import librosa
         import matplotlib.pyplot as plt
         # plot mel spectrogram mel_np
+        #plt.imshow(mel_np)
+        #lt.show()
         
         plt.figure(figsize=(10, 4))
         #librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
-        plt.colorbar(format='%+2.0f dB')
+        #plt.colorbar(format='%+2.0f dB')
         plt.title('Mel spectrogram')
         plt.tight_layout()
         plt.imshow(mel_np)
