@@ -111,8 +111,9 @@ class EfficientFSModule(LightningModule):
         print("wav shape:", wavs.shape)
         S = librosa.feature.melspectrogram(wavs, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
         S_DB = librosa.power_to_db(S, ref=np.max)
-        librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel');
-        plt.colorbar(format='%+2.0f dB')
+        librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel')
+        plt.savefig("mel_librosa.png")
+        #plt.colorbar(format='%+2.0f dB')
 
         return wav, mel_len #, elapsed_time
 
