@@ -54,7 +54,7 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
         text = text[:-1]
     text += ". "
     phoneme = np.array(
-        [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=verbose)], dtype=np.int32)
+        [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
     start_time = time.time()
     if is_onnx:
         # onnx is 3.5x faster than pytorch models
