@@ -88,14 +88,16 @@ class EfficientFSModule(LightningModule):
         print("mel shape:", mel.shape)
         mel_np = mel[0].cpu().detach().numpy()
         import numpy as np
-        import librosa
+        #import librosa
         import matplotlib.pyplot as plt
-        # plot mel spectrogram
+        # plot mel spectrogram mel_np
+        
         plt.figure(figsize=(10, 4))
-        librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
+        #librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
         plt.colorbar(format='%+2.0f dB')
         plt.title('Mel spectrogram')
         plt.tight_layout()
+        plt.imshow(mel_np)
         plt.show()
         # save mel spectrogram plot
         plt.savefig("mel.png")
