@@ -85,15 +85,10 @@ class EfficientFSModule(LightningModule):
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
-        print("mel shape:", mel.shape)
-        mel_np = mel[0].cpu().detach().numpy()
-        import numpy as np
-        #import librosa
-        import matplotlib.pyplot as plt
-        # plot mel spectrogram mel_np
-        #plt.imshow(mel_np)
-        #lt.show()
         
+        print("mel shape:", mel.shape)
+        mel_np = mel[0].cpu().detach().numpy().transpose(1, 0)
+        import matplotlib.pyplot as plt        
         plt.figure(figsize=(10, 4))
         #librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
         #plt.colorbar(format='%+2.0f dB')
