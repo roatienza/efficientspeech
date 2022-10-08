@@ -90,8 +90,7 @@ class EfficientFSModule(LightningModule):
         mel_np = mel[0].cpu().detach().numpy().transpose(1, 0)
         import matplotlib.pyplot as plt        
         plt.figure(figsize=(10, 4))
-        #librosa.display.specshow(mel_np, x_axis='time', y_axis='mel', sr=22050, fmax=8000)
-        #plt.colorbar(format='%+2.0f dB')
+
         plt.title('Mel spectrogram')
         plt.tight_layout()
         plt.imshow(mel_np)
@@ -103,6 +102,14 @@ class EfficientFSModule(LightningModule):
         #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
+
+        import librosa
+        import numpy as np
+        S = librosa.feature.melspectrogram(wav, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
+        S_DB = librosa.power_to_db(S, ref=np.max)
+        librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel');
+        plt.colorbar(format='%+2.0f dB')
+
         return wav, mel_len #, elapsed_time
 
     def loss(self, y_hat, y, x):
