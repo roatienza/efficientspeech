@@ -85,38 +85,36 @@ class EfficientFSModule(LightningModule):
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
         #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
-        
-        print("mel shape:", mel.shape)
-        mel_np = mel[0].cpu().detach().numpy().transpose(1, 0)
-        import matplotlib.pyplot as plt        
-        plt.figure(figsize=(10, 4))
-
-        plt.title('Mel spectrogram')
-        plt.tight_layout()
-        plt.imshow(mel_np)
-        plt.savefig("mel.png")
-        plt.show()
-        # save mel spectrogram plot
-        
-
         #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
+        return wav, mel_len #, elapsed_time
+        
+        #print("mel shape:", mel.shape)
+        #mel_np = mel[0].cpu().detach().numpy().transpose(1, 0)
+        #import matplotlib.pyplot as plt        
+        #plt.figure(figsize=(10, 4))
 
-        import librosa
-        import librosa.display
-        import numpy as np
-        wavs = wav.cpu().numpy()
-        wavs = np.reshape(wavs, (-1, ))
-        print("wav shape:", wavs.shape)
-        S = librosa.feature.melspectrogram(wavs, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
-        S_DB = librosa.power_to_db(S, ref=np.max)
-        librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel')
-        plt.savefig("mel_librosa.png")
+        #plt.title('Mel spectrogram')
+        #plt.tight_layout()
+        #plt.imshow(mel_np)
+        #plt.savefig("mel.png")
+        #plt.show()
+        # save mel spectrogram plot
+        
+        #import librosa
+        #import librosa.display
+        #import numpy as np
+        #wavs = wav.cpu().numpy()
+        #wavs = np.reshape(wavs, (-1, ))
+        #print("wav shape:", wavs.shape)
+        #S = librosa.feature.melspectrogram(wavs, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
+        #S_DB = librosa.power_to_db(S, ref=np.max)
+        #librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel')
+        #plt.savefig("mel_librosa.png")
         #plt.colorbar(format='%+2.0f dB')
 
-        return wav, mel_len #, elapsed_time
-
+        
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
         energy_pred = y_hat["energy"]
