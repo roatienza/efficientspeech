@@ -91,7 +91,7 @@ class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Predictor """
 
     def __init__(self, dim, pitch_stats=None, energy_stats=None, \
-                 n_mel_channels=80, duration=False, dropout=0.0,):
+                 n_mel_channels=80, duration=False, dropout=0,):
         super().__init__()
         
         self.n_mel_channels = n_mel_channels

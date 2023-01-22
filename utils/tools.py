@@ -341,7 +341,7 @@ def get_args():
     parser.add_argument('--block-depth',
                         type=int,
                         default=2,
-                        help='Decoder block depth. Default for tiny, small & base.')
+                        help='Decoder block depth. Default for tiny & small. Base:  3')
     parser.add_argument('--n-blocks',
                         type=int,
                         default=2,
