@@ -26,6 +26,29 @@ To use speaker with GUI interface, run:
         --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3 \
         --preprocess-config config/isip-preprocess.yaml
 
+    PyTorch:
+    English
+    (Tiny)
+    python3 demo.py --checkpoint checkpoints/icassp2023/base_eng.ckpt --accelerator cpu \
+            --infer-device cpu \
+
+    (Small)
+            --n-blocks 3 --reduction 2
+
+    (Base)
+            --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3
+
+
+    (Normal HiFiGAN)
+            --hifigan-checkpoint hifigan/generator_LJSpeech.pth.tar
+        
+
+    No-GUI
+        # add this option
+        --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
+        # play it using ffplay
+        ffplay wav_outputs/fox.wav-1.wav
+
 Dependencies:
     pip3 install pysimplegui
     pip3 install sounddevice 
@@ -50,9 +73,9 @@ from synthesize import get_lexicon_and_g2p, text2phoneme
 def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False):
     text = args.text.strip()
     text = text.replace('-', ' ')
-    if text[-1] == ".":
-        text = text[:-1]
-    text += ". "
+    #if text[-1] == ".":
+    #    text = text[:-1]
+    #text += ". "
     phoneme = np.array(
         [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
     start_time = time.time()
