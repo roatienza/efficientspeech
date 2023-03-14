@@ -5,7 +5,7 @@
 ## Quick Demo
 
 ```
-python3 demo.py --checkpoint checkpoints/icassp2023/tiny_eng.ckpt \
+python3 demo.py --checkpoint checkpoints/icassp2023/tiny_eng_266k.ckpt \
   --accelerator cpu --infer-device cpu \
   --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
 ```
