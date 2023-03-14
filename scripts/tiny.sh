@@ -1,5 +1,5 @@
 Demo:
-python3 demo.py --checkpoint checkpoints/tiny_engckpt --accelerator cpu --infer-device cpu --head 1 --reduction 4 --expansion 1 --kernel-size 3 --n-blocks 2
+python3 demo.py --checkpoint checkpoints/tiny_eng.ckpt --accelerator cpu --infer-device cpu --head 1 --reduction 4 --expansion 1 --kernel-size 3 --n-blocks 2
 
 python3 demo.py --checkpoint checkpoints/tiny_tag.ckpt --accelerator cpu --infer-device cpu --head 1 --reduction 4 --expansion 1 --kernel-size 3  --n-blocks 2 --preprocess-config config/isip-preprocess.yaml
 
