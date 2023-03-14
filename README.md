@@ -4,6 +4,8 @@
 
 ## Quick Demo
 
+**Tiny ES**
+
 ```
 python3 demo.py --checkpoint checkpoints/icassp2023/tiny_eng_266k.ckpt \
   --accelerator cpu --infer-device cpu \
@@ -16,11 +18,34 @@ Output file is under `wav_outputs`. Play the wav file:
 ffplay wav_outputs/fox.wav-1.wav
 ```
 
-### Train ES
+**Small ES**
+
+```
+python3 demo.py --checkpoint checkpoints/icassp2023/small_eng_952k.ckpt \
+  --n-blocks 3 --reduction 2 \
+  --accelerator cpu --infer-device cpu \
+  --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
+```
+
+**Base ES**
+
+```
+python3 demo.py --checkpoint checkpoints/icassp2023/base_eng_4M.ckpt \
+  --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3 \
+  --accelerator cpu --infer-device cpu \
+  --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
+```
+
+
+### Train
+
+**Tiny ES**
 
 ```
 python3 train.py
 ```
+
+
 
 ## Citation
 If you find this work useful, please cite:
