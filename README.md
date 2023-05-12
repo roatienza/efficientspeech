@@ -20,6 +20,12 @@
 pip install -r requirements.txt
 ```
 
+If you encountered problems with cublas:
+
+```
+pip uninstall nvidia_cublas_cu11
+```
+
 **Tiny ES**
 
 ```
