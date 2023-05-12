@@ -17,7 +17,7 @@
 **Tiny ES**
 
 ```
-python3 demo.py --checkpoint checkpoints/icassp2023/tiny_eng_266k.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/tiny_eng_266k.ckpt \
   --accelerator cpu --infer-device cpu \
   --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
 ```
@@ -28,22 +28,50 @@ Output file is under `wav_outputs`. Play the wav file:
 ffplay wav_outputs/fox.wav-1.wav
 ```
 
+After downloading the weights, it can be reused:
+
+```
+python3 demo.py --checkpoint tiny_eng_266k.ckpt --accelerator cpu \
+  --infer-device cpu  \
+  --text "In additive color mixing, which is used for displays such as computer screens and televisions, the primary colors are red, green, and blue." \
+  --wav-filename color.wav
+```
+
+Playback:
+
+```
+ffplay wav_outputs/color.wav-1.wav
+```
+
 **Small ES**
 
 ```
-python3 demo.py --checkpoint checkpoints/icassp2023/small_eng_952k.ckpt \
-  --n-blocks 3 --reduction 2 \
-  --accelerator cpu --infer-device cpu \
-  --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/small_eng_952k.ckpt \
+  --accelerator cpu --infer-device cpu  --n-blocks 3 --reduction 2  \
+  --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow." \
+  --wav-filename color-small.wav
 ```
+
+Playback:
+
+```
+ffplay wav_outputs/color-small.wav-1.wav
+```
+
 
 **Base ES**
 
 ```
-python3 demo.py --checkpoint checkpoints/icassp2023/base_eng_4M.ckpt \
-  --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3 \
-  --accelerator cpu --infer-device cpu \
-  --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
+python3 demo.py --checkpoint  https://github.com/roatienza/efficientspeech/releases/download/icassp2023/base_eng_4M.ckpt \
+  --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3  \
+  --accelerator cpu --infer-device cpu  \
+  --text " Why do bees have sticky hair?" --wav-filename  bees-base.wav
+```
+
+Playback:
+
+```
+ffplay wav_outputs/bees-base.wav-1.wav
 ```
 
 
