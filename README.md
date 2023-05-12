@@ -14,6 +14,12 @@
 
 ## Quick Demo
 
+**Install**
+
+```
+pip install -r requirements.txt
+```
+
 **Tiny ES**
 
 ```
