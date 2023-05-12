@@ -1,6 +1,6 @@
 torch==1.13
 torchvision==0.15
-pytorch-lightning===1.8
+pytorch-lightning===1.8.6
 torchmetrics==0.11
 lightning-bolts==0.6
 unidecode
