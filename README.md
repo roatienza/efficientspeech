@@ -74,6 +74,15 @@ Playback:
 ffplay wav_outputs/bees-base.wav-1.wav
 ```
 
+**GPU** for Inference
+
+```
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/small_eng_952k.ckpt \
+  --accelerator cuda --infer-device cuda  --n-blocks 3 --reduction 2  \
+  --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow."   \
+  --wav-filename color-small.wav
+```
+
 
 ### Train
 
