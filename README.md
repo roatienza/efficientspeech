@@ -73,7 +73,7 @@ python3 train.py --head 2 --reduction 1 --expansion 2 \
   --kernel-size 5 --n-blocks 3 --block-depth 3
 ```
 
-### Comparison with other SOTA Neural TTS
+## Comparison with other SOTA Neural TTS
 
 [ES vs FS2 vs PortaSpeech vs LightSpeech](https://roatienza.github.io/efficientspeech-demo/)
 
