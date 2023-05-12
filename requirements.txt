@@ -1,5 +1,5 @@
 torch==1.13
-torchvision==0.13
+torchvision==0.14
 pytorch-lightning===1.8.6
 torchmetrics==0.11
 lightning-bolts==0.6
