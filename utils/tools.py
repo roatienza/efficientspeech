@@ -302,7 +302,7 @@ def pad(input_ele, mel_max_length=None):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--accelerator", type=str, default="gpu")
+    parser.add_argument("--accelerator", type=str, default="cuda")
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
