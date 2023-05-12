@@ -12,19 +12,11 @@ To use speaker with GUI interface, run:
       python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.onnx --accelerator cpu \
         --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
 
-    (Tagalog ISIP - Tiny)
-      python3 demo.py --checkpoint checkpoints/tiny_v2_tag_attn.onnx --preprocess-config \
-        config/isip-preprocess.yaml
-    
     Torch model:
     (English LJ - Small)
       python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.ckpt --accelerator cpu \
         --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
 
-    (Tagalog ISIP - Tiny)
-      python3 demo.py --checkpoint checkpoints/small_v2_tag_attn.ckpt --accelerator cpu \
-        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3 \
-        --preprocess-config config/isip-preprocess.yaml
 
     PyTorch:
     English
@@ -62,20 +54,16 @@ import soundfile as sf
 import numpy as np
 import os
 import hashlib
+import validators
 
 
 from model import EfficientFSModule
 from utils.tools import get_args, write_to_file
 from synthesize import get_lexicon_and_g2p, text2phoneme
 
-#from scipy.io import wavfile
-
 def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False):
     text = args.text.strip()
     text = text.replace('-', ' ')
-    #if text[-1] == ".":
-    #    text = text[:-1]
-    #text += ". "
     phoneme = np.array(
         [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
     start_time = time.time()
@@ -114,15 +102,11 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
     
-    # to get mel_times, edit model.py predict_step() to return the timing information
-    # mel_rtf = wav_len / elapsed_time_mels
-
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
     if verbose:
         print(message)
-    #return wav, message,  phoneme, mel_rtf, wav_len, real_time_factor
     return wav, message, phoneme, wav_len, real_time_factor
 
 if __name__ == "__main__":
@@ -134,21 +118,28 @@ if __name__ == "__main__":
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     is_onnx = False
 
-    if "onnx" in args.checkpoint:
+    if validators.url(args.checkpoint):
+        checkpoint = args.checkpoint.rsplit('/', 1)[-1]
+        torch.hub.download_url_to_file(args.checkpoint, checkpoint)
+    else:
+        checkpoint = args.checkpoint
+
+
+    if "onnx" in checkpoint:
         #pl_module.load_from_onnx(args.checkpoint)
         import onnxruntime
         import onnx
 
-        onnx_model = onnx.load(args.checkpoint)
+        onnx_model = onnx.load(checkpoint)
         onnx.checker.check_model(onnx_model)
 
-        ort_session = onnxruntime.InferenceSession(args.checkpoint)
+        ort_session = onnxruntime.InferenceSession(checkpoint)
         is_onnx = True
     else:
         pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device,
                                       hifigan_checkpoint=args.hifigan_checkpoint,)
 
-        pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
+        pl_module = pl_module.load_from_checkpoint(checkpoint, 
                                                    preprocess_config=preprocess_config,
                                                    lr=args.lr, 
                                                    warmup_epochs=args.warmup_epochs, 
@@ -166,87 +157,12 @@ if __name__ == "__main__":
                                                    infer_device=args.infer_device, 
                                                    dropout=args.dropout,
                                                    verbose=args.verbose)
-        #print(pl_module.phoneme2mel.decoder)
-        #exit(0)
         pl_module = pl_module.to(args.infer_device)
         pl_module.eval()
-        if args.benchmark:
-            from fvcore.nn import FlopCountAnalysis, flop_count_table, parameter_count
-            if args.text is None:
-                print("supply to convert to speech using --text")
-                print("--text may be a single sentence or a file containing multiple sentences")
-                exit(1)
-
-            # test if a file exists and read all text
-            texts = None
-            if os.path.exists(args.text):
-                with open(args.text, 'r') as f:
-                    texts = f.read()
-
-                texts = texts.splitlines()
-                
-            # create a directory to store the audio files
-            args.tts = "tts_efficentspeech"
-            if not os.path.exists(args.tts):
-                os.mkdir(args.tts)
-
-            # read one line at a time
-            if texts is not None:
-                args.text = "the quick brown fox jumps over the lazy dog"
-                # warm up to initialze the model and cache
-                for _ in range(10):
-                    _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
-                
-                mel_rtfs = []
-                rtf = []
-                all_flops = []
-                voice_lens = []
-                for text in texts:
-                    args.text = text
-
-                    wav, _, phoneme,  wav_len, real_time_factor \
-                         = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=args.verbose)
-                    
-                    #mel_rtfs.append(mel_rtf)
-                    rtf.append(real_time_factor)
-                    voice_lens.append(wav_len)
-                    #flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
-                    #all_flops.append(flops.total())
-                    # create a hash of text variable
-                    hash_object = hashlib.md5(text.encode())
-                    # append the hash to the filename
-                    filename = os.path.join(args.tts, hash_object.hexdigest() + ".wav")
-                    sf.write(filename, wav, sampling_rate)
-                    # copy file from /tmp to current directory
-                    
-
-                #print(f"Average mel real time factor: {np.mean(mel_rtfs):.6f}")
-                print(f"Average real time factor: {np.mean(rtf):.2f}")
-                print(f"Average voice length: {np.mean(voice_lens):.2f} sec")
-                #print(f"Average end-to-end flops: {np.mean(all_flops):.2f}")
-                exit(0)
-
-           
-            # warmup
-            for _ in range(10):
-                _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
-
-            _, _, phoneme, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=True)
-
-            with torch.no_grad():
-                #phoneme = phoneme.int().to(args.infer_device)
-                flops = FlopCountAnalysis(pl_module, {"phoneme": phoneme})
-                param = parameter_count(pl_module)
-
-            print("FLOPS: {:,}".format(flops.total()))
-            print("Parameters: {:,}".format(param[""]))
-            print(flop_count_table(flops))
-            exit(0)
 
     if args.text is not None:
         tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
         exit(0)
-
 
     import sounddevice as sd
     import PySimpleGUI as sg
