@@ -74,10 +74,11 @@ python3 train.py --head 2 --reduction 1 --expansion 2 \
 If you find this work useful, please cite:
 
 ```
-@inproceedings{atienza2023effficientspeech,
+@inproceedings{atienza2023efficientspeech,
   title={EfficientSpeech: An On-Device Text to Speech Model},
   author={Atienza, Rowel},
-  booktitle={IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP 2023)},
+  booktitle={ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  pages={1--5},
   year={2023},
   organization={IEEE}
 }
