@@ -1,0 +1,13 @@
+torch
+torchvision
+torchaudio
+pytorch-lightning
+torchmetrics
+lightning-bolts
+unidecode
+inflect
+matplotlib
+scipy
+pillow
+einops
+g2p-en
