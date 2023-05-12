@@ -49,6 +49,10 @@ python3 demo.py --checkpoint checkpoints/icassp2023/base_eng_4M.ckpt \
 
 ### Train
 
+**Data Preparation**
+
+Use the unofficial [FastSpeech2](https://github.com/ming024/FastSpeech2) implementation to prepare the dataset.
+
 **Tiny ES**
 
 ```
@@ -68,6 +72,10 @@ python3 train.py --n-blocks 3 --reduction 2
 python3 train.py --head 2 --reduction 1 --expansion 2 \
   --kernel-size 5 --n-blocks 3 --block-depth 3
 ```
+
+## Credits
+
+- [FastSpeech2 Unofficial Github](https://github.com/ming024/FastSpeech2)
 
 
 ## Citation
