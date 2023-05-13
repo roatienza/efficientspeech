@@ -92,6 +92,13 @@ python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releas
   --wav-filename color-small.wav
 ```
 
+### RPi4 Inference
+
+`torch==1.13` generates `Illegal instruction` error on RPi4 but not on `torch==1.12`. Please downgrade the installed torch to resolve this issue.
+
+```
+pip3 install torch==1.12 torchvision==0.13
+```
 
 ### Train
 
