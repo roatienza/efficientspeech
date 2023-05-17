@@ -1,47 +1,17 @@
 '''
-EfficientSpeech Text to Speech (TTS) demo.
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
 
-Benchmarking:
-python3 demo.py --benchmark --text tiny_english/prediction.txt --infer-device cuda
+Usage:
+    Torch:
+    python3 demo.py --checkpoint tiny_eng_266k.ckpt --infer-device cuda  --text "In additive color mixing, which is used for displays such as computer screens and televisions, the primary colors are red, green, and blue."  --wav-filename color.wav
 
-
-To use speaker with GUI interface, run:
-    (Tagalog)
-    ONNX: 
-    (English LJ - Small)
-      python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.onnx --accelerator cpu \
-        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
-
-    Torch model:
-    (English LJ - Small)
-      python3 demo.py --checkpoint checkpoints/small_v2_eng_attn.ckpt --accelerator cpu \
-        --infer-device cpu --head 1 --reduction 2 --expansion 1 --kernel-size 3
-
-
-    PyTorch:
-    English
-    (Tiny)
-    python3 demo.py --checkpoint checkpoints/icassp2023/base_eng.ckpt --accelerator cpu \
-            --infer-device cpu \
-
-    (Small)
-            --n-blocks 3 --reduction 2
-
-    (Base)
-            --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3
-
-
-    (Normal HiFiGAN)
-            --hifigan-checkpoint hifigan/generator_LJSpeech.pth.tar
-        
-
-    No-GUI
-        # add this option
-        --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
-        # play it using ffplay
-        ffplay wav_outputs/fox.wav-1.wav
-
-Dependencies:
+    ONNX:
+    python3 demo.py --checkpoint tiny_eng_266k.onnx --infer-device cuda  --text "In additive color mixing, which is used for displays such as computer screens and televisions, the primary colors are red, green, and blue."  --wav-filename color.wav
+    
+Additional dependencies for GUI:
     pip3 install pysimplegui
     pip3 install sounddevice 
 '''
@@ -50,7 +20,7 @@ import torch
 import yaml
 import time
 import numpy as np
-import soundfile as sf
+
 import numpy as np
 import os
 import hashlib
@@ -61,39 +31,50 @@ from model import EfficientFSModule
 from utils.tools import get_args, write_to_file
 from synthesize import get_lexicon_and_g2p, text2phoneme
 
-def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False):
+def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
     text = args.text.strip()
     text = text.replace('-', ' ')
     phoneme = np.array(
-        [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
+            [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
     start_time = time.time()
     if is_onnx:
         # onnx is 3.5x faster than pytorch models
         phoneme_len = phoneme.shape[1]
-        n_append = args.onnx_insize // phoneme_len
-        phoneme = [phoneme] * (n_append + 1)
-        phoneme = np.concatenate(phoneme, axis=1)
+        
+        text = text + 2*args.onnx_insize*'- '
+        phoneme = np.array(
+            [text2phoneme(lexicon, g2p, text, preprocess_config, verbose=args.verbose)], dtype=np.int32)
+        
+        # unfortunately, due to call to repeat_interleave(), dynamic axis is not supported
+        # so, the input size must be fixed to args.onnx_insize=128 (can be configured)
         phoneme = phoneme[:, :args.onnx_insize]
-
-        ort_inputs = {ort_session.get_inputs()[0].name: phoneme}
-        outputs = ort_session.run(None, ort_inputs)
+        
+        ort_inputs = {model.get_inputs()[0].name: phoneme}
+        outputs = model.run(None, ort_inputs)
         wavs = outputs[0]
         hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
-        duration = outputs[2]
-        orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+        lengths = outputs[1]
+        
+        # ideally the duration is returned by the model but was disabled during training
+        # maybe in the next release
+        # duration = outputs[2]
+        # orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+        
+        # crude estimate of duration
+        orig_duration = int(lengths*phoneme_len/args.onnx_insize) * hop_len
+        # truncate the wav file to the original duration
         wavs = wavs[:, :orig_duration]
-        duration = [orig_duration]
+        lengths = [orig_duration]
     else:
         with torch.no_grad():
             phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
-            #wavs, lengths, elapsed_time_mels = pl_module({"phoneme": phoneme})
-            wavs, lengths = pl_module({"phoneme": phoneme})
+            wavs, lengths = model({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
             lengths = lengths.cpu().numpy()
         
     elapsed_time = time.time() - start_time
-    if is_onnx:
-        elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
+    #if is_onnx:
+    #    elapsed_time *= (wav.shape[0] / outputs[0].shape[1])
     wav = np.reshape(wavs, (-1, 1))
 
     message = f"Synthesis time: {elapsed_time:.2f} sec"
@@ -101,12 +82,12 @@ def tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args, verbose=False
     message += f"\nVoice length: {wav_len:.2f} sec"
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
-    
+    message += f"\nNote:\tFor benchmarking, load the model 1st, do a warmup run for 100x, then run the benchmark for 1000 iterations."
+    message += f"\n\tGet the mean of 1000 runs."
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
-    if verbose:
-        print(message)
+    print(message)
     return wav, message, phoneme, wav_len, real_time_factor
 
 if __name__ == "__main__":
@@ -134,9 +115,11 @@ if __name__ == "__main__":
         onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(checkpoint)
+        pl_module = ort_session
         is_onnx = True
     else:
-        pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device,
+        pl_module = EfficientFSModule(preprocess_config=preprocess_config, 
+                                      infer_device=args.infer_device,
                                       hifigan_checkpoint=args.hifigan_checkpoint,)
 
         pl_module = pl_module.load_from_checkpoint(checkpoint, 

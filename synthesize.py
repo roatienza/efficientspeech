@@ -1,3 +1,10 @@
+'''
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
+'''
+
 import re
 import numpy as np
 import torch

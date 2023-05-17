@@ -1,4 +1,4 @@
-torch==1.13
+torch==1.13.1
 torchvision==0.14
 pytorch-lightning===1.8.6
 torchmetrics==0.11
@@ -11,3 +11,6 @@ pillow
 einops
 g2p-en
 validators
+onnx
+onnxruntime
+protobuf==3.20

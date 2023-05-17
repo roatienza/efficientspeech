@@ -1,3 +1,9 @@
+'''
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
+'''
 
 import os
 import json
@@ -79,42 +85,18 @@ class EfficientFSModule(LightningModule):
         self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint,
                                    infer_device=infer_device, verbose=verbose)
 
+
     def forward(self, x):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
+
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        #start_time = time.time()
         mel, mel_len = self.phoneme2mel(batch, train=False)
-        #elapsed_time = time.time() - start_time
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, mel_len #, elapsed_time
-        
-        #print("mel shape:", mel.shape)
-        #mel_np = mel[0].cpu().detach().numpy().transpose(1, 0)
-        #import matplotlib.pyplot as plt        
-        #plt.figure(figsize=(10, 4))
+        return wav, mel_len
 
-        #plt.title('Mel spectrogram')
-        #plt.tight_layout()
-        #plt.imshow(mel_np)
-        #plt.savefig("mel.png")
-        #plt.show()
-        # save mel spectrogram plot
-        
-        #import librosa
-        #import librosa.display
-        #import numpy as np
-        #wavs = wav.cpu().numpy()
-        #wavs = np.reshape(wavs, (-1, ))
-        #print("wav shape:", wavs.shape)
-        #S = librosa.feature.melspectrogram(wavs, sr=22050, n_fft=1024, hop_length=256, n_mels=80)
-        #S_DB = librosa.power_to_db(S, ref=np.max)
-        #librosa.display.specshow(S_DB, sr=22050, hop_length=256, x_axis='time', y_axis='mel')
-        #plt.savefig("mel_librosa.png")
-        #plt.colorbar(format='%+2.0f dB')
 
-        
     def loss(self, y_hat, y, x):
         pitch_pred = y_hat["pitch"]
         energy_pred = y_hat["energy"]
@@ -172,14 +154,12 @@ class EfficientFSModule(LightningModule):
 
 
     def training_epoch_end(self, outputs):
-        #avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         avg_mel_loss = torch.stack([x["mel_loss"] for x in outputs]).mean()
         avg_pitch_loss = torch.stack([x["pitch_loss"] for x in outputs]).mean()
         avg_energy_loss = torch.stack(
             [x["energy_loss"] for x in outputs]).mean()
         avg_duration_loss = torch.stack(
             [x["duration_loss"] for x in outputs]).mean()
-        #self.log("train", avg_loss, on_epoch=True, prog_bar=True)
         self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)

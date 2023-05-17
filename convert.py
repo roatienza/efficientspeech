@@ -1,19 +1,11 @@
 '''
-Torch model to onnx or jit converter
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
 
-Conver a torch model:
-    (English LJ - Small)
-    ONNX:
-      python3 convert.py --checkpoint checkpoints/small_v2_eng_attn.ckpt  --accelerator cpu \
-         --infer-device cpu  --head 1 --reduction 2 --expansion 1 --kernel-size 3 \
-             --onnx checkpoints/small_v2_eng_attn.onnx
-
-
-    (Tagalog)
-    ONNX:
-      python3 convert.py --checkpoint checkpoints/tiny_v2_tag_attn.ckpt --accelerator cpu --infer-device cpu \
-          --head 1 --reduction 4 --expansion 1 --kernel-size 3  --n-blocks 2 --preprocess-config config/isip-preprocess.yaml \
-          --onnx checkpoints/tiny_v2_tag_attn.onnx > log.txt
+Usage:
+    python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx
 '''
 
 import torch
@@ -29,34 +21,43 @@ if __name__ == "__main__":
 
     pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
  
-    pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
-                                               lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                               depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                               reduction=args.reduction, head=args.head,
-                                               embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+    pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
+                                               preprocess_config=preprocess_config,
+                                               lr=args.lr, 
+                                               warmup_epochs=args.warmup_epochs, 
+                                               max_epochs=args.max_epochs,
+                                               depth=args.depth, 
+                                               n_blocks=args.n_blocks, 
+                                               block_depth=args.block_depth,
+                                               reduction=args.reduction, 
+                                               head=args.head,
+                                               embed_dim=args.embed_dim, 
+                                               kernel_size=args.kernel_size,
                                                decoder_kernel_size=args.decoder_kernel_size,
                                                expansion=args.expansion, 
                                                hifigan_checkpoint=args.hifigan_checkpoint,
                                                infer_device=args.infer_device, 
                                                verbose=args.verbose)
+    pl_module = pl_module.to(args.infer_device)
+    # not needed but here it is
     pl_module.eval()
 
     if args.onnx is not None:
-        phoneme = torch.randint(low=150, high=196, size=(1,args.onnx_insize)).int()
+        phoneme = torch.randint(low=70, high=146, size=(1,args.onnx_insize)).int()
         print("Input shape: ", phoneme.shape)
-        sample_input = {"phoneme": phoneme, }
+        sample_input = [{"phoneme": phoneme}, False]
         print("Converting to ONNX ...", args.onnx)
         
-        with torch.no_grad():
-            # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
-            # or use pl_module.to_onnx
-            torch.onnx.export(pl_module, sample_input, args.onnx, export_params=True,
-                              opset_version=args.onnx_opset, do_constant_folding=True, verbose=True,
-                              input_names=["inputs"], output_names=["outputs"],)
-                              #dynamic_axes={
-                              #    "inputs": {1: "phoneme"},
-                              #    "outputs": {1: "wav"} #ideally, this works but repeat_interleave is fixed
-                              #})
+        # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
+        # or use pl_module.to_onnx
+        #pl_module.to_onnx(args.onnx, sample_input, input_names="phoneme") #, export_params=True)
+        torch.onnx.export(pl_module, sample_input, args.onnx,
+                            opset_version=args.onnx_opset, do_constant_folding=True,
+                            input_names=["inputs"], output_names=["outputs"],
+                            dynamic_axes={
+                                "inputs": {1: "phoneme"},
+                                "outputs": {1: "wav"} #ideally, this works but repeat_interleave is fixed
+                            })
     elif args.jit is not None:
         with torch.no_grad():
             print("Converting to JIT ...", args.jit)

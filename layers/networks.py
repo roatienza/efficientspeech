@@ -414,6 +414,11 @@ class Phoneme2Mel(nn.Module):
         self.decoder = decoder
 
     def forward(self, x, train=False):
+        # Dirty trick to enable ONNX compilation.
+        # Else, the torch.to_onnx complains about missing input in the forward method.
+        if isinstance(x, list):
+            x = x[0]
+            
         pred = self.encoder(x, train=train)
         mel = self.decoder(pred["features"]) 
         

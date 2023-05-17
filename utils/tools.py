@@ -21,9 +21,15 @@ def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", fil
             
     # create dir if not exists
     os.makedirs(wav_path, exist_ok=True)
-    for i, wav in enumerate(wavs):
-        path = os.path.join(wav_path, "{}-{}.wav".format(filename, i+1))
-        wavfile.write(path, sampling_rate, wav)
+    if len(wavs) == 1:
+        path = os.path.join(wav_path, filename)
+        print("Writing wav to {}".format(path))
+        wavfile.write(path, sampling_rate, wavs[0])
+    else:
+        for i, wav in enumerate(wavs):
+            path = os.path.join(wav_path, "{}-{}.wav".format(filename, i+1))
+            print("Writing wav to {}".format(path))
+            wavfile.write(path, sampling_rate, wav)
     
     return wavs, sampling_rate
 
@@ -302,7 +308,8 @@ def pad(input_ele, mel_max_length=None):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--accelerator", type=str, default="cuda")
+    choices = ['cpu', 'cuda']
+    parser.add_argument("--accelerator", type=str, default=choices[0], choices=choices)
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--num_workers", type=int, default=4)
@@ -406,17 +413,19 @@ def get_args():
     parser.add_argument('--synthesize',
                         action='store_true',
                         help='synthesize audio using pre-trained model')
+    
     parser.add_argument("--infer-device",
-                        default=None,
+                        default=choices[0],
+                        choices=choices,
                         type=str,
                         help="Inference device",)
     
     parser.add_argument("--checkpoint",
-                        default='checkpoints/tiny_english_drp0.1f.ckpt',
+                        default=None,
                         type=str,
-                        help="path to model checkpoint file",)
+                        help="Path to model checkpoint file",)
     parser.add_argument("--wav-path",
-                        default="wav_outputs",
+                        default="outputs",
                         type=str,
                         help="path to wav file to be generated",)
     parser.add_argument("--wav-filename",
@@ -446,7 +455,7 @@ def get_args():
                         help='max input size for the onnx model')
     parser.add_argument('--onnx-opset',
                         type=int,
-                        default=13,
+                        default=14,
                         help='opset version of onnx model (9<opset<15)')
 
     parser.add_argument('--jit',
