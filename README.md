@@ -33,10 +33,10 @@ python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releas
   --infer-device cpu --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
 ```
 
-Output file is under `wav_outputs`. Play the wav file:
+Output file is under `outputs`. Play the wav file:
 
 ```
-ffplay wav_outputs/fox.wav-1.wav
+ffplay outputs/fox.wav
 ```
 
 After downloading the weights, it can be reused:
@@ -50,7 +50,7 @@ python3 demo.py --checkpoint tiny_eng_266k.ckpt --infer-device cpu  \
 Playback:
 
 ```
-ffplay wav_outputs/color.wav-1.wav
+ffplay outputs/color.wav
 ```
 
 **Small ES**
@@ -65,7 +65,7 @@ python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releas
 Playback:
 
 ```
-ffplay wav_outputs/color-small.wav-1.wav
+ffplay outputs/color-small.wav
 ```
 
 
@@ -80,7 +80,7 @@ python3 demo.py --checkpoint  https://github.com/roatienza/efficientspeech/relea
 Playback:
 
 ```
-ffplay wav_outputs/bees-base.wav-1.wav
+ffplay outputs/bees-base.wav
 ```
 
 **GPU** for Inference
@@ -98,6 +98,27 @@ python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releas
 
 ```
 pip3 install torch==1.12 torchvision==0.13
+```
+
+### ONNX 
+
+Only supports fixed input phoneme length. Padding or truncation is applied if needed. Modify using `--onnx-insize=<desired valu>`.
+
+```
+python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx
+```
+
+Might need to downgrade `protobuf` if an error occurs.
+
+```
+pip install protobuf==3.20
+```
+
+Usage:
+
+```
+python3 demo.py --checkpoint tiny_eng_266k.onnx --infer-device cpu  \
+  --text "the primary colors are red, green, and blue."  --wav-filename primary.wav
 ```
 
 ### Train
