@@ -5,6 +5,7 @@
 ## Paper
 
 - [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/10094639)
+- [Arxiv](https://arxiv.org/abs/2305.13905)
 
 ## Model Architecture
 
