@@ -17,6 +17,8 @@
 
 **Install**
 
+**ES** is currently migrating to Pytorch 2.0 and Lightning 2.0. Expect unstable features. New model weights will be provided soon. 
+
 ```
 pip install -r requirements.txt
 ```
@@ -122,13 +124,60 @@ python3 demo.py --checkpoint tiny_eng_266k.onnx --infer-device cpu  \
   --text "the primary colors are red, green, and blue."  --wav-filename primary.wav
 ```
 
-### Train
+### Dataset Preparation
 
-**Data Preparation**
+Choose a dataset folder: eg `<data_folder> = /data/tts` - directory where dataset will be stored
 
-Use the unofficial [FastSpeech2](https://github.com/ming024/FastSpeech2) implementation to prepare the dataset.
+Download LJSpeech:
+
+```
+cd <data_folder>
+wget https://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2
+tar zxvf LJSpeech-1.1.tar.bz2
+```
+
+Prepare the dataset:  `<parent_folder>` -  where efficientspeech was git cloned.
+
+```
+cd <parent_folder>/efficientspeech
+```
+
+Edit `config/LJSpeech/preprocess.yaml`:
+
+```
+>>>>>>>>>>>>>>>>>
+path:
+  corpus_path: "/data/tts/LJSpeech-1.1"
+  lexicon_path: "lexicon/librispeech-lexicon.txt"
+  raw_path: "/data/tts/LJSpeech-1.1/wavs"
+  preprocessed_path: "./preprocessed_data/LJSpeech"
+>>>>>>>>>>>>>>>>
+```
+
+Replace `/data/tts` with your `<data_folder>`
+
+Download alignment data to `preprocessed_data/LJSpeech/TextGrid` from [here](https://drive.google.com/drive/folders/1DBRkALpPd6FL9gjHMmMEdHODmkgNIIK4?usp=sharing).
+
+Prepare the dataset:
+
+```
+python3 prepare_align.py config/LJSpeech/preprocess.yaml
+```
+
+This will take an hour or so.
+
+For more info: [FastSpeech2](https://github.com/ming024/FastSpeech2) implementation to prepare the dataset.
+
+## Train
 
 **Tiny ES**
+
+By default:
+  - `--precision=bf16-mixed`. If your GPU does not support `bfloat16`, change this option to one of these: `"bf16-mixed", "16-mixed", 16, 32, 64`.
+  - `--accelerator=gpu`
+  - `--infer-device=cuda`
+  - `--devices=1`
+  - See more options in `utils/tools.py`
 
 ```
 python3 train.py
