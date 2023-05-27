@@ -1,17 +1,19 @@
+'''
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
+'''
 
 
 import yaml
-#import os
-
-#import numpy as np
-#import torch
-
+import torch
 from datamodule import LJSpeechDataModule
-from pytorch_lightning import Trainer
-from pytorch_lightning.strategies.ddp import DDPStrategy
+from lightning import Trainer
+from lightning.pytorch.strategies import DDPStrategy
 
 from utils.tools import get_args
-from model import EfficientFSModule
+from model import EfficientSpeech
 
 
 def print_args(args):
@@ -22,24 +24,6 @@ def print_args(args):
     opt_log += '---------------------------------------\n'
     print(opt_log)
     return opt_log
-
-
-#def convert_to_torchscipt(args, pl_module, preprocess_config):
-#    if not os.path.exists(args.checkpoints):
-#        os.makedirs(args.checkpoints, exist_ok=True)
-#    phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
-#    hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
-    
-#    phoneme2mel, hifigan = load_module(args, pl_module, preprocess_config)
-
-    #print("Saving JIT script ... ", hifigan_ckpt)
-    #script = torch.jit.script(hifigan) #hifigan.to_torchscript()
-    #torch.jit.save(script, hifigan_ckpt)
-
-#    print("Saving JIT script ... ", phoneme2mel_ckpt)
-#    script = torch.jit.script(phoneme2mel) #phoneme2mel.to_torchscript()
-#    torch.jit.save(script, phoneme2mel_ckpt)
-
 
 
 if __name__ == "__main__":
@@ -54,7 +38,7 @@ if __name__ == "__main__":
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers)
 
-    pl_module = EfficientFSModule(preprocess_config=preprocess_config, lr=args.lr,
+    model = EfficientSpeech(preprocess_config=preprocess_config, lr=args.lr,
                                   warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
                                   depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
                                   reduction=args.reduction, head=args.head,
@@ -68,12 +52,13 @@ if __name__ == "__main__":
     if args.verbose:
         print_args(args)
         
+    torch.set_float32_matmul_precision('medium')
     trainer = Trainer(accelerator=args.accelerator, 
                       devices=args.devices,
                       precision=args.precision,
-                      #strategy="ddp",
-                      strategy = DDPStrategy(find_unused_parameters=False),
+                      #strategy = 'ddp', #DDPStrategy(find_unused_parameters=False),
                       check_val_every_n_epoch=10,
                       max_epochs=args.max_epochs,)
 
-    trainer.fit(pl_module, datamodule=datamodule)
+    compiled_model = torch.compile(model) #, mode="reduce-overhead")
+    trainer.fit(compiled_model, datamodule=datamodule)

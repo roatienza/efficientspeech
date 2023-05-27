@@ -1,3 +1,11 @@
+'''
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza, 2023
+Apache 2.0 License
+'''
+
+
 import json
 import torch
 import os
@@ -6,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from text import text_to_sequence
 from utils.tools import pad_1D, pad_2D
-from pytorch_lightning import LightningDataModule
+from lightning import LightningDataModule
 from utils.tools import get_mask_from_lengths
 
 class LJSpeechDataModule(LightningDataModule):
@@ -176,5 +184,3 @@ class LJSpeechDataset(Dataset):
                 text.append(t)
                 raw_text.append(r)
             return name, speaker, text, raw_text
-
- 

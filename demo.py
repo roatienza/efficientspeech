@@ -27,7 +27,7 @@ import hashlib
 import validators
 
 
-from model import EfficientFSModule
+from model import EfficientSpeech
 from utils.tools import get_args, write_to_file
 from synthesize import get_lexicon_and_g2p, text2phoneme
 
@@ -68,7 +68,7 @@ def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
     else:
         with torch.no_grad():
             phoneme = torch.from_numpy(phoneme).int().to(args.infer_device)
-            wavs, lengths = model({"phoneme": phoneme})
+            wavs, lengths, _ = model({"phoneme": phoneme})
             wavs = wavs.cpu().numpy()
             lengths = lengths.cpu().numpy()
         
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
 
     if "onnx" in checkpoint:
-        #pl_module.load_from_onnx(args.checkpoint)
+        #model.load_from_onnx(args.checkpoint)
         import onnxruntime
         import onnx
 
@@ -115,36 +115,36 @@ if __name__ == "__main__":
         onnx.checker.check_model(onnx_model)
 
         ort_session = onnxruntime.InferenceSession(checkpoint)
-        pl_module = ort_session
+        model = ort_session
         is_onnx = True
     else:
-        pl_module = EfficientFSModule(preprocess_config=preprocess_config, 
-                                      infer_device=args.infer_device,
-                                      hifigan_checkpoint=args.hifigan_checkpoint,)
+        model = EfficientSpeech(preprocess_config=preprocess_config, 
+                                infer_device=args.infer_device,
+                                hifigan_checkpoint=args.hifigan_checkpoint,)
 
-        pl_module = pl_module.load_from_checkpoint(checkpoint, 
-                                                   preprocess_config=preprocess_config,
-                                                   lr=args.lr, 
-                                                   warmup_epochs=args.warmup_epochs, 
-                                                   max_epochs=args.max_epochs,
-                                                   depth=args.depth, 
-                                                   n_blocks=args.n_blocks, 
-                                                   block_depth=args.block_depth,
-                                                   reduction=args.reduction, 
-                                                   head=args.head,
-                                                   embed_dim=args.embed_dim, 
-                                                   kernel_size=args.kernel_size,
-                                                   decoder_kernel_size=args.decoder_kernel_size,
-                                                   expansion=args.expansion,
-                                                   hifigan_checkpoint=args.hifigan_checkpoint,
-                                                   infer_device=args.infer_device, 
-                                                   dropout=args.dropout,
-                                                   verbose=args.verbose)
-        pl_module = pl_module.to(args.infer_device)
-        pl_module.eval()
+        model = model.load_from_checkpoint(checkpoint, 
+                                           preprocess_config=preprocess_config,
+                                           lr=args.lr, 
+                                           warmup_epochs=args.warmup_epochs, 
+                                           max_epochs=args.max_epochs,
+                                           depth=args.depth, 
+                                           n_blocks=args.n_blocks, 
+                                           block_depth=args.block_depth,
+                                           reduction=args.reduction, 
+                                           head=args.head,
+                                           embed_dim=args.embed_dim, 
+                                           kernel_size=args.kernel_size,
+                                           decoder_kernel_size=args.decoder_kernel_size,
+                                           expansion=args.expansion,
+                                           hifigan_checkpoint=args.hifigan_checkpoint,
+                                           infer_device=args.infer_device, 
+                                           dropout=args.dropout,
+                                           verbose=args.verbose)
+        model = model.to(args.infer_device)
+        model.eval()
 
     if args.text is not None:
-        tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+        tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
         exit(0)
 
     import sounddevice as sd
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         elif event == '-PLAY-':
             current_frame = 0
             args.text = multiline.get()
-            wav, message, _, _, _ = tts(lexicon, g2p, preprocess_config, pl_module, is_onnx, args)
+            wav, message, _, _, _ = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
 
             g_window['-TIME-'].update(message)
             g_window.refresh()

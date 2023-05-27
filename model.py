@@ -13,10 +13,11 @@ import torch.nn as nn
 import time
 
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
-from pytorch_lightning import LightningModule
+from lightning import LightningModule
 from torch.optim import AdamW
 from utils.tools import write_to_file
-from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR
+#from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
     # get the main path
@@ -46,14 +47,14 @@ def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verb
     return vocoder
 
 
-class EfficientFSModule(LightningModule):
+class EfficientSpeech(LightningModule):
     def __init__(self,
                  preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=5000,
                  depth=2, n_blocks=2, block_depth=2, reduction=4, head=1,
                  embed_dim=128, kernel_size=3, decoder_kernel_size=3, expansion=1,
                  wav_path="wavs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
                  infer_device=None, dropout=0.0, verbose=False):
-        super(EfficientFSModule, self).__init__()
+        super(EfficientSpeech, self).__init__()
 
         self.preprocess_config = preprocess_config
         self.lr = lr
@@ -85,16 +86,18 @@ class EfficientFSModule(LightningModule):
         self.hifigan = get_hifigan(checkpoint=hifigan_checkpoint,
                                    infer_device=infer_device, verbose=verbose)
 
+        self.training_step_outputs = []
+
 
     def forward(self, x):
         return self.phoneme2mel(x, train=True) if self.training else self.predict_step(x)
 
 
     def predict_step(self, batch, batch_idx=0,  dataloader_idx=0):
-        mel, mel_len = self.phoneme2mel(batch, train=False)
+        mel, mel_len, duration = self.phoneme2mel(batch, train=False)
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
-        return wav, mel_len
+        return wav, mel_len, duration
 
 
     def loss(self, y_hat, y, x):
@@ -149,30 +152,41 @@ class EfficientFSModule(LightningModule):
         mel_loss, pitch_loss, energy_loss, duration_loss = self.loss(y_hat, y, x)
         loss = (10. * mel_loss) + (2. * pitch_loss) + (2. * energy_loss) + duration_loss
         
-        return {"loss": loss, "mel_loss": mel_loss, "pitch_loss": pitch_loss,
-                "energy_loss": energy_loss, "duration_loss": duration_loss}
+        losses = {"loss": loss, 
+                   "mel_loss": mel_loss, 
+                   "pitch_loss": pitch_loss,
+                   "energy_loss": energy_loss, 
+                   "duration_loss": duration_loss}
+        self.training_step_outputs.append(losses)
+        return loss
 
 
-    def training_epoch_end(self, outputs):
-        avg_mel_loss = torch.stack([x["mel_loss"] for x in outputs]).mean()
-        avg_pitch_loss = torch.stack([x["pitch_loss"] for x in outputs]).mean()
-        avg_energy_loss = torch.stack(
-            [x["energy_loss"] for x in outputs]).mean()
-        avg_duration_loss = torch.stack(
-            [x["duration_loss"] for x in outputs]).mean()
-        self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+    #def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
+        #avg_loss = torch.stack(self.training_step_outputs).mean()
+        avg_loss = torch.stack([x["loss"] for x in self.training_step_outputs]).mean()
+        avg_mel_loss = torch.stack([x["mel_loss"] for x in self.training_step_outputs]).mean()
+        #avg_pitch_loss = torch.stack([x["pitch_loss"] for x in self.training_step_outputs]).mean()
+        #avg_energy_loss = torch.stack(
+        #    [x["energy_loss"] for x in self.training_step_outputs]).mean()
+        #avg_duration_loss = torch.stack(
+        #    [x["duration_loss"] for x in self.training_step_outputs]).mean()
+        #self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        #self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        #self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        #self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("loss", avg_loss, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log("lr", self.scheduler.get_last_lr()[0], on_epoch=True, prog_bar=True, sync_dist=True)
+        self.training_step_outputs.clear()
 
 
-    def test_step(self, batch, batch_idx):
+    #def test_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx):
         # TODO: use predict step for wav file generation
 
         if batch_idx==0 and self.current_epoch>1 :
             x, y = batch
-            wavs, lengths = self.forward(x)
+            wavs, lengths, _ = self.forward(x)
             wavs = wavs.cpu().numpy()
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
                 wav_path=self.wav_path, filename="prediction")
@@ -194,20 +208,18 @@ class EfficientFSModule(LightningModule):
                 for i in range(len(text)):
                     f.write(text[i] + "\n")
             
-    def test_epoch_end(self, outputs):
+    def on_test_epoch_end(self):
         pass
 
-    def validation_step(self, batch, batch_idx):
-        return self.test_step(batch, batch_idx)
+    #def validation_step(self, batch, batch_idx):
+    #     return self.test_step(batch, batch_idx)
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         pass
 
     def configure_optimizers(self):
         optimizer = AdamW(self.parameters(), lr=self.lr, weight_decay=1e-5)
-        self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, \
-                            warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
+        #self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, \
+        #                    warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
+        self.scheduler = CosineAnnealingLR(optimizer, T_max = self.max_epochs)
         return [optimizer], [self.scheduler]
-
-
-    

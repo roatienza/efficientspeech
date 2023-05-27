@@ -10,7 +10,7 @@ Usage:
 
 import torch
 import yaml
-from model import EfficientFSModule
+from model import EfficientSpeech
 from utils.tools import get_args
 
 # main routine
@@ -19,9 +19,9 @@ if __name__ == "__main__":
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
 
-    pl_module = EfficientFSModule(preprocess_config=preprocess_config, infer_device=args.infer_device)
+    model = EfficientSpeech(preprocess_config=preprocess_config, infer_device=args.infer_device)
  
-    pl_module = pl_module.load_from_checkpoint(args.checkpoint, 
+    model = model.load_from_checkpoint(args.checkpoint, 
                                                preprocess_config=preprocess_config,
                                                lr=args.lr, 
                                                warmup_epochs=args.warmup_epochs, 
@@ -38,9 +38,9 @@ if __name__ == "__main__":
                                                hifigan_checkpoint=args.hifigan_checkpoint,
                                                infer_device=args.infer_device, 
                                                verbose=args.verbose)
-    pl_module = pl_module.to(args.infer_device)
+    model = model.to(args.infer_device)
     # not needed but here it is
-    pl_module.eval()
+    model.eval()
 
     if args.onnx is not None:
         phoneme = torch.randint(low=70, high=146, size=(1,args.onnx_insize)).int()
@@ -49,9 +49,9 @@ if __name__ == "__main__":
         print("Converting to ONNX ...", args.onnx)
         
         # https://pytorch.org/docs/stable/onnx.html#torch.onnx.export
-        # or use pl_module.to_onnx
-        #pl_module.to_onnx(args.onnx, sample_input, input_names="phoneme") #, export_params=True)
-        torch.onnx.export(pl_module, sample_input, args.onnx,
+        # or use model.to_onnx
+        #model.to_onnx(args.onnx, sample_input, input_names="phoneme") #, export_params=True)
+        torch.onnx.export(model, sample_input, args.onnx,
                             opset_version=args.onnx_opset, do_constant_folding=True,
                             input_names=["inputs"], output_names=["outputs"],
                             dynamic_axes={
@@ -61,6 +61,6 @@ if __name__ == "__main__":
     elif args.jit is not None:
         with torch.no_grad():
             print("Converting to JIT ...", args.jit)
-            #pl_module.to_jit()
-            script = pl_module.to_torchscript()
+            #model.to_jit()
+            script = model.to_torchscript()
             torch.jit.save(script, args.jit)

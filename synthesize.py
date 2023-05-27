@@ -106,21 +106,21 @@ def load_jit_modules(args):
     hifigan = torch.jit.load(hifigan_ckpt)
     return phoneme2mel, hifigan
 
-def load_module(args, pl_module, preprocess_config):
+def load_module(args, model, preprocess_config):
     print("Loading model checkpoint ...", args.checkpoint)
-    pl_module = pl_module.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
-                                               lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                               depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                               reduction=args.reduction, head=args.head,
-                                               embed_dim=args.embed_dim, kernel_size=args.kernel_size,
-                                               decoder_kernel_size=args.decoder_kernel_size,
-                                               expansion=args.expansion, 
-                                               hifigan_checkpoint=args.hifigan_checkpoint,
-                                               infer_device=args.infer_device, 
-                                               verbose=args.verbose)
-    pl_module.eval()
+    model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
+                                       lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
+                                       depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
+                                       reduction=args.reduction, head=args.head,
+                                       embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+                                       decoder_kernel_size=args.decoder_kernel_size,
+                                       expansion=args.expansion, 
+                                       hifigan_checkpoint=args.hifigan_checkpoint,
+                                       infer_device=args.infer_device, 
+                                       verbose=args.verbose)
+    model.eval()
     
-    phoneme2mel = pl_module.phoneme2mel
-    pl_module.hifigan.eval()
-    hifigan = pl_module.hifigan
+    phoneme2mel = model.phoneme2mel
+    model.hifigan.eval()
+    hifigan = model.hifigan
     return phoneme2mel, hifigan
