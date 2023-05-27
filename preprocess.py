@@ -1,7 +1,5 @@
 import argparse
-
 import yaml
-
 from preprocessor.preprocessor import Preprocessor
 
 

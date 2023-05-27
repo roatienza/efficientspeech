@@ -1,15 +1,15 @@
 '''
 EfficientSpeech: An On-Device Text to Speech Model
 https://ieeexplore.ieee.org/abstract/document/10094639
-Rowel Atienza, 2023
+Rowel Atienza
 Apache 2.0 License
+2023
 '''
 
 import re
 import numpy as np
 import torch
 import time
-
 
 from string import punctuation
 from g2p_en import G2p
@@ -98,21 +98,20 @@ def synthesize(lexicon, g2p, args, phoneme2mel, hifigan, preprocess_config, verb
                             preprocess_config=preprocess_config, wav_path=args.wav_path)
 
 
-def load_jit_modules(args):
-    import os
-    phoneme2mel_ckpt = os.path.join(args.checkpoints, args.phoneme2mel_jit)
-    hifigan_ckpt = os.path.join(args.checkpoints, args.hifigan_jit)
-    phoneme2mel = torch.jit.load(phoneme2mel_ckpt)
-    hifigan = torch.jit.load(hifigan_ckpt)
-    return phoneme2mel, hifigan
-
 def load_module(args, model, preprocess_config):
     print("Loading model checkpoint ...", args.checkpoint)
-    model = model.load_from_checkpoint(args.checkpoint, preprocess_config=preprocess_config,
-                                       lr=args.lr, warmup_epochs=args.warmup_epochs, max_epochs=args.max_epochs,
-                                       depth=args.depth, n_blocks=args.n_blocks, block_depth=args.block_depth,
-                                       reduction=args.reduction, head=args.head,
-                                       embed_dim=args.embed_dim, kernel_size=args.kernel_size,
+    model = model.load_from_checkpoint(args.checkpoint, 
+                                       preprocess_config=preprocess_config,
+                                       lr=args.lr, 
+                                       weight_decay=args.weight_decay, 
+                                       max_epochs=args.max_epochs,
+                                       depth=args.depth, 
+                                       n_blocks=args.n_blocks, 
+                                       block_depth=args.block_depth,
+                                       reduction=args.reduction, 
+                                       head=args.head,
+                                       embed_dim=args.embed_dim, 
+                                       kernel_size=args.kernel_size,
                                        decoder_kernel_size=args.decoder_kernel_size,
                                        expansion=args.expansion, 
                                        hifigan_checkpoint=args.hifigan_checkpoint,
@@ -123,4 +122,5 @@ def load_module(args, model, preprocess_config):
     phoneme2mel = model.phoneme2mel
     model.hifigan.eval()
     hifigan = model.hifigan
+    
     return phoneme2mel, hifigan

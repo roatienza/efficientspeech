@@ -1,6 +1,6 @@
 
-from einops import rearrange, reduce, repeat
-from torch import nn, einsum
+from einops import reduce, repeat
+from torch import nn
 import torch
 import torch.nn.functional as F
 

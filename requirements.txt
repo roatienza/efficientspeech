@@ -1,8 +1,7 @@
 torch>=2.0.1
 torchvision>=0.15.2
 lightning>=2.0.2
-torchmetrics==0.11.4
-lightning-bolts==0.6
+torchmetrics>=0.11.4
 unidecode
 inflect
 matplotlib

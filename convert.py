@@ -21,23 +21,23 @@ if __name__ == "__main__":
 
     model = EfficientSpeech(preprocess_config=preprocess_config, infer_device=args.infer_device)
  
-    model = model.load_from_checkpoint(args.checkpoint, 
-                                               preprocess_config=preprocess_config,
-                                               lr=args.lr, 
-                                               warmup_epochs=args.warmup_epochs, 
-                                               max_epochs=args.max_epochs,
-                                               depth=args.depth, 
-                                               n_blocks=args.n_blocks, 
-                                               block_depth=args.block_depth,
-                                               reduction=args.reduction, 
-                                               head=args.head,
-                                               embed_dim=args.embed_dim, 
-                                               kernel_size=args.kernel_size,
-                                               decoder_kernel_size=args.decoder_kernel_size,
-                                               expansion=args.expansion, 
-                                               hifigan_checkpoint=args.hifigan_checkpoint,
-                                               infer_device=args.infer_device, 
-                                               verbose=args.verbose)
+    model = model.load_from_checkpoint(args.checkpoint,
+                                       preprocess_config=preprocess_config,
+                                       lr=args.lr,
+                                       weight_decay=args.weight_decay,
+                                       max_epochs=args.max_epochs,
+                                       depth=args.depth,
+                                       n_blocks=args.n_blocks,
+                                       block_depth=args.block_depth,
+                                       reduction=args.reduction,
+                                       head=args.head,
+                                       embed_dim=args.embed_dim,
+                                       kernel_size=args.kernel_size,
+                                       decoder_kernel_size=args.decoder_kernel_size,
+                                       expansion=args.expansion,
+                                       hifigan_checkpoint=args.hifigan_checkpoint,
+                                       infer_device=args.infer_device,
+                                       verbose=args.verbose)
     model = model.to(args.infer_device)
     # not needed but here it is
     model.eval()

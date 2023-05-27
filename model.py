@@ -1,8 +1,9 @@
 '''
 EfficientSpeech: An On-Device Text to Speech Model
 https://ieeexplore.ieee.org/abstract/document/10094639
-Rowel Atienza, 2023
+Rowel Atienza
 Apache 2.0 License
+2023
 '''
 
 import os
@@ -10,14 +11,14 @@ import json
 import hifigan
 import torch
 import torch.nn as nn
-import time
+import math
 
 from layers import PhonemeEncoder, MelDecoder, Phoneme2Mel
 from lightning import LightningModule
 from torch.optim import AdamW
 from utils.tools import write_to_file
-from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR
-#from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
+
 
 def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verbose=False):
     # get the main path
@@ -46,21 +47,82 @@ def get_hifigan(checkpoint="hifigan/LJ_V2/generator_v2", infer_device=None, verb
     
     return vocoder
 
+# bard
+def linear_warmup_cosine_annealing_lr(optimizer, num_warmup_steps, num_training_steps, max_lr):
+    """
+    Implements a learning rate scheduler with linear warm up and then cosine learning rate decay.
+
+    Args:
+        optimizer: The optimizer to use.
+        num_warmup_steps: The number of steps to use for linear warm up.
+        num_training_steps: The total number of training steps.
+        max_lr: The maximum learning rate.
+
+    Returns:
+        A learning rate scheduler.
+    """
+    scheduler = CosineAnnealingLR(optimizer, num_training_steps, eta_min=0)
+
+    def lr_lambda(current_step: int):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        else:
+            return 0.5 * (1.0 + math.cos(math.pi * (current_step - num_warmup_steps) / float(num_training_steps - num_warmup_steps)))
+
+    scheduler.set_lambda(lr_lambda)
+
+    return scheduler
+
+# chatgpt
+def get_lr_scheduler(optimizer, warmup_steps, total_steps, min_lr=0):
+    """
+    Create a learning rate scheduler with linear warm-up and cosine learning rate decay.
+
+    Args:
+        optimizer (torch.optim.Optimizer): The optimizer for which to create the scheduler.
+        warmup_steps (int): The number of warm-up steps.
+        total_steps (int): The total number of steps.
+        min_lr (float, optional): The minimum learning rate at the end of the decay. Default: 0.
+
+    Returns:
+        torch.optim.lr_scheduler.LambdaLR: The learning rate scheduler.
+    """
+
+    def lr_lambda(current_step):
+        if current_step < warmup_steps:
+            # Linear warm-up
+            return float(current_step) / float(max(1, warmup_steps))
+        else:
+            # Cosine learning rate decay
+            progress = float(current_step - warmup_steps) / float(max(1, total_steps - warmup_steps))
+            return max(min_lr, 0.5 * (1.0 + math.cos(math.pi * progress)))
+
+    scheduler = LambdaLR(optimizer, lr_lambda)
+    return scheduler
+
 
 class EfficientSpeech(LightningModule):
     def __init__(self,
-                 preprocess_config, lr=1e-3, warmup_epochs=25, max_epochs=5000,
-                 depth=2, n_blocks=2, block_depth=2, reduction=4, head=1,
-                 embed_dim=128, kernel_size=3, decoder_kernel_size=3, expansion=1,
-                 wav_path="wavs", hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
-                 infer_device=None, dropout=0.0, verbose=False):
+                 preprocess_config, 
+                 lr=1e-3,
+                 weight_decay=1e-6, 
+                 max_epochs=5000,
+                 depth=2, 
+                 n_blocks=2, 
+                 block_depth=2, 
+                 reduction=4, 
+                 head=1,
+                 embed_dim=128, 
+                 kernel_size=3, 
+                 decoder_kernel_size=3, 
+                 expansion=1,
+                 wav_path="wavs", 
+                 hifigan_checkpoint="hifigan/LJ_V2/generator_v2",
+                 infer_device=None, 
+                 verbose=False):
         super(EfficientSpeech, self).__init__()
 
-        self.preprocess_config = preprocess_config
-        self.lr = lr
-        self.warmup_epochs = warmup_epochs
-        self.max_epochs = max_epochs
-        self.wav_path = wav_path
+        self.save_hyperparameters()
 
         with open(os.path.join(preprocess_config["path"]["preprocessed_path"], "stats.json")) as f:
             stats = json.load(f)
@@ -74,11 +136,12 @@ class EfficientSpeech(LightningModule):
                                          head=head,
                                          embed_dim=embed_dim,
                                          kernel_size=kernel_size,
-                                         expansion=expansion,
-                                         dropout=dropout)
+                                         expansion=expansion)
 
-        mel_decoder = MelDecoder(dim=embed_dim//reduction, kernel_size=decoder_kernel_size,
-                                 n_blocks=n_blocks, block_depth=block_depth)
+        mel_decoder = MelDecoder(dim=embed_dim//reduction, 
+                                 kernel_size=decoder_kernel_size,
+                                 n_blocks=n_blocks, 
+                                 block_depth=block_depth)
 
         self.phoneme2mel = Phoneme2Mel(encoder=phoneme_encoder,
                                        decoder=mel_decoder)
@@ -97,6 +160,7 @@ class EfficientSpeech(LightningModule):
         mel, mel_len, duration = self.phoneme2mel(batch, train=False)
         mel = mel.transpose(1, 2)
         wav = self.hifigan(mel).squeeze(1)
+        
         return wav, mel_len, duration
 
 
@@ -158,11 +222,11 @@ class EfficientSpeech(LightningModule):
                   "energy_loss": energy_loss, 
                   "duration_loss": duration_loss}
         self.training_step_outputs.append(losses)
+        
         return loss
 
 
     def on_train_epoch_end(self):
-        #avg_loss = torch.stack(self.training_step_outputs).mean()
         avg_loss = torch.stack([x["loss"] for x in self.training_step_outputs]).mean()
         avg_mel_loss = torch.stack([x["mel_loss"] for x in self.training_step_outputs]).mean()
         avg_pitch_loss = torch.stack([x["pitch_loss"] for x in self.training_step_outputs]).mean()
@@ -186,8 +250,8 @@ class EfficientSpeech(LightningModule):
             x, y = batch
             wavs, lengths, _ = self.forward(x)
             wavs = wavs.to(torch.float).cpu().numpy()
-            write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
-                wav_path=self.wav_path, filename="prediction")
+            write_to_file(wavs, self.hparams.preprocess_config, lengths=lengths.cpu().numpy(), \
+                wav_path=self.hparams.wav_path, filename="prediction")
 
             mel = y["mel"]
             mel = mel.transpose(1, 2)
@@ -196,11 +260,11 @@ class EfficientSpeech(LightningModule):
                 wavs = self.hifigan(mel).squeeze(1)
                 wavs = wavs.to(torch.float).cpu().numpy()
             
-            write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(),\
-                    wav_path=self.wav_path, filename="reconstruction")
+            write_to_file(wavs, self.hparams.preprocess_config, lengths=lengths.cpu().numpy(),\
+                    wav_path=self.hparams.wav_path, filename="reconstruction")
 
             # write the text to be converted to file
-            path = os.path.join(self.wav_path, "prediction.txt")
+            path = os.path.join(self.hparams.wav_path, "prediction.txt")
             with open(path, "w") as f:
                 text = x["text"] 
                 for i in range(len(text)):
@@ -213,8 +277,7 @@ class EfficientSpeech(LightningModule):
         pass
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.lr, weight_decay=1e-5)
-        #self.scheduler = LinearWarmupCosineAnnealingLR(optimizer, \
-        #                    warmup_epochs=self.warmup_epochs, max_epochs=self.max_epochs)
-        self.scheduler = CosineAnnealingLR(optimizer, T_max = self.max_epochs)
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
+        self.scheduler = get_lr_scheduler(optimizer, 50, self.hparams.max_epochs, min_lr=0)
+    
         return [optimizer], [self.scheduler]

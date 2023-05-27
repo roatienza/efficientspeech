@@ -1,8 +1,9 @@
 '''
 EfficientSpeech: An On-Device Text to Speech Model
 https://ieeexplore.ieee.org/abstract/document/10094639
-Rowel Atienza, 2023
+Rowel Atienza
 Apache 2.0 License
+2023
 
 Usage:
     Torch:
@@ -20,12 +21,7 @@ import torch
 import yaml
 import time
 import numpy as np
-
-import numpy as np
-import os
-import hashlib
 import validators
-
 
 from model import EfficientSpeech
 from utils.tools import get_args, write_to_file
@@ -124,8 +120,8 @@ if __name__ == "__main__":
 
         model = model.load_from_checkpoint(checkpoint, 
                                            preprocess_config=preprocess_config,
-                                           lr=args.lr, 
-                                           warmup_epochs=args.warmup_epochs, 
+                                           lr=args.lr,
+                                           weight_decay=args.weight_decay,
                                            max_epochs=args.max_epochs,
                                            depth=args.depth, 
                                            n_blocks=args.n_blocks, 
@@ -137,8 +133,7 @@ if __name__ == "__main__":
                                            decoder_kernel_size=args.decoder_kernel_size,
                                            expansion=args.expansion,
                                            hifigan_checkpoint=args.hifigan_checkpoint,
-                                           infer_device=args.infer_device, 
-                                           dropout=args.dropout,
+                                           infer_device=args.infer_device,
                                            verbose=args.verbose)
         model = model.to(args.infer_device)
         model.eval()

@@ -1,16 +1,16 @@
 '''
-
-Reference code for FastSpeech2: https://github.com/ming024/FastSpeech2
-
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza
+Apache 2.0 License
+2023
 '''
-
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 from .blocks import MixFFN, SelfAttention
 from text.symbols import symbols
-
 
 class Encoder(nn.Module):
     """ Phoneme Encoder """
@@ -90,8 +90,11 @@ class Encoder(nn.Module):
 class AcousticDecoder(nn.Module):
     """ Pitch, Duration, Energy Predictor """
 
-    def __init__(self, dim, pitch_stats=None, energy_stats=None, \
-                 n_mel_channels=80, duration=False, dropout=0,):
+    def __init__(self, dim, 
+                 pitch_stats=None, 
+                 energy_stats=None,
+                 n_mel_channels=80, 
+                 duration=False):
         super().__init__()
         
         self.n_mel_channels = n_mel_channels
@@ -102,7 +105,6 @@ class AcousticDecoder(nn.Module):
         self.norm2 = nn.LayerNorm(dim)
         self.linear = nn.Linear(dim, 1)
         self.duration = duration
-        self.dropout = dropout
         
         if pitch_stats is not None:
             pitch_min, pitch_max = pitch_stats
@@ -150,13 +152,11 @@ class AcousticDecoder(nn.Module):
         y = fused_features.permute(0, 2, 1)
         y = self.conv1(y)
         y = y.permute(0, 2, 1)
-        y = nn.ReLU()(self.norm1(y))
-        y = nn.Dropout(self.dropout)(y)
+        y = nn.ReLU()(self.norm1(y))        
         y = y.permute(0, 2, 1)
         y = self.conv2(y)
         y = y.permute(0, 2, 1)
         features = self.norm2(y)
-        y = nn.Dropout(self.dropout)(features)
         y = self.linear(y)
         if self.duration:
             y = nn.ReLU()(y)
@@ -315,8 +315,7 @@ class PhonemeEncoder(nn.Module):
                  head=1, 
                  embed_dim=128, 
                  kernel_size=3, 
-                 expansion=1,
-                 dropout=0.0):
+                 expansion=1):
         super().__init__()
 
         self.encoder = Encoder(depth=depth,
@@ -329,9 +328,9 @@ class PhonemeEncoder(nn.Module):
         dim = embed_dim // reduction
         self.fuse = Fuse(self.encoder.get_feature_dims(), kernel_size=kernel_size)
         self.feature_upsampler = FeatureUpsampler()
-        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats, dropout=dropout)
-        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats, dropout=dropout)
-        self.duration_decoder = AcousticDecoder(dim, duration=True, dropout=dropout)
+        self.pitch_decoder = AcousticDecoder(dim, pitch_stats=pitch_stats)
+        self.energy_decoder = AcousticDecoder(dim, energy_stats=energy_stats)
+        self.duration_decoder = AcousticDecoder(dim, duration=True)
         
 
     def forward(self, x, train=False):

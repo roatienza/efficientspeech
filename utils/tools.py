@@ -1,3 +1,11 @@
+'''
+EfficientSpeech: An On-Device Text to Speech Model
+https://ieeexplore.ieee.org/abstract/document/10094639
+Rowel Atienza
+Apache 2.0 License
+2023
+'''
+
 import os
 import json
 import time
@@ -307,11 +315,15 @@ def pad(input_ele, mel_max_length=None):
 
 def get_args():
     parser = argparse.ArgumentParser()
+    
     choices = ['cpu', 'gpu']
     parser.add_argument("--accelerator", type=str, default=choices[1], choices=choices)
+    
     parser.add_argument("--devices", type=int, default=1)
+    
     choices = ["bf16-mixed", "16-mixed", 16, 32, 64]
-    parser.add_argument("--precision", default=choices[0])
+    parser.add_argument("--precision", default=choices[0], choices=choices)
+    
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_epochs", type=int, default=5000)
     parser.add_argument("--warmup_epochs", type=int, default=50)
@@ -319,7 +331,7 @@ def get_args():
     parser.add_argument("--preprocess-config",
                         default="config/LJSpeech/preprocess.yaml",
                         type=str,
-                        help="path to preprocess.yaml",)
+                        help="Path to preprocess.yaml",)
     parser.add_argument('--weight-decay',
                         type=float,
                         default=1e-5,
@@ -336,11 +348,7 @@ def get_args():
                         default=128,
                         metavar='N',
                         help='Batch size')
-    parser.add_argument('--dropout',
-                        type=float,
-                        default=0.0,
-                        help='Global dropout rate')   
-    
+      
     parser.add_argument('--depth',
                         type=int,
                         default=2,
@@ -378,32 +386,11 @@ def get_args():
                         default=1,
                         help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
-                        default="outputs",
+                        default="val_outputs",
                         type=str,
-                        help="Output folder")
-    #parser.add_argument('--seed',
-    #                    type=int,
-    #                    default=0,
-    #                    metavar='N',
-    #                    help='Random seed')
+                        help="Output folder during training",)
 
-    #parser.add_argument('--mel-loss-weight',
-    #                    type=float,
-    #                    default=10.,
-    #                    help='Mel Loss weight')
-    #parser.add_argument('--pitch-loss-weight',
-    #                    type=float,
-    #                    default=1.,
-    #                    help='Ptch Loss weight')
-    #parser.add_argument('--energy-loss-weight',
-    #                    type=float,
-    #                    default=1.,
-    #                    help='Energy Loss weight')
-
-    # use jit modules 
-    parser.add_argument('--to-torchscript',
-                        action='store_true',
-                        help='Convert model to torchscript')
+  
 
     parser.add_argument("--hifigan-checkpoint",
                         default="hifigan/LJ_V2/generator_v2",
@@ -428,15 +415,12 @@ def get_args():
     parser.add_argument("--wav-path",
                         default="outputs",
                         type=str,
-                        help="path to wav file to be generated",)
+                        help="Folder to wav file to be generated during inference",)
     parser.add_argument("--wav-filename",
                         default="efficient_speech",
                         type=str,
                         help="wav filename to be generated",)
-    parser.add_argument("--checkpoints",
-                        default="checkpoints",
-                        type=str,
-                        help="path to model checkpoints folder",)
+    
     parser.add_argument("--text",
                         type=str,
                         default=None,
@@ -463,7 +447,10 @@ def get_args():
                         type=str,
                         default=None,
                         help='convert to jit model')
-
+    # use jit modules 
+    parser.add_argument('--to-torchscript',
+                        action='store_true',
+                        help='Convert model to torchscript')
 
     # if benchmark is True 
     parser.add_argument('--benchmark',
@@ -471,9 +458,6 @@ def get_args():
                         help='run benchmark')
     
     args = parser.parse_args()
-
-    #if args.seed == 0:
-    #    args.seed = random.randint(0, 1e3)
 
     args.num_workers *= args.devices
 
