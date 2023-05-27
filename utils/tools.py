@@ -28,7 +28,6 @@ def write_to_file(wavs, preprocess_config, lengths=None, wav_path="outputs", fil
     else:
         for i, wav in enumerate(wavs):
             path = os.path.join(wav_path, "{}-{}.wav".format(filename, i+1))
-            print("Writing wav to {}".format(path))
             wavfile.write(path, sampling_rate, wav)
     
     return wavs, sampling_rate
@@ -308,16 +307,17 @@ def pad(input_ele, mel_max_length=None):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    choices = ['cpu', 'cuda']
-    parser.add_argument("--accelerator", type=str, default=choices[0], choices=choices)
+    choices = ['cpu', 'gpu']
+    parser.add_argument("--accelerator", type=str, default=choices[1], choices=choices)
     parser.add_argument("--devices", type=int, default=1)
-    parser.add_argument("--precision", default=16, type=int)
+    choices = ["bf16-mixed", "16-mixed", 16, 32, 64]
+    parser.add_argument("--precision", default=choices[0])
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_epochs", type=int, default=5000)
     parser.add_argument("--warmup_epochs", type=int, default=50)
 
     parser.add_argument("--preprocess-config",
-                        default="config/preprocess.yaml",
+                        default="config/LJSpeech/preprocess.yaml",
                         type=str,
                         help="path to preprocess.yaml",)
     parser.add_argument('--weight-decay',
@@ -378,7 +378,7 @@ def get_args():
                         default=1,
                         help='MixFFN expansion. Default for tiny & small. Base: 2.')
     parser.add_argument('--out-folder',
-                        default="tiny_english",
+                        default="outputs",
                         type=str,
                         help="Output folder")
     #parser.add_argument('--seed',
@@ -414,8 +414,9 @@ def get_args():
                         action='store_true',
                         help='synthesize audio using pre-trained model')
     
+    choices = ['cpu', 'cuda']
     parser.add_argument("--infer-device",
-                        default=choices[0],
+                        default=choices[1],
                         choices=choices,
                         type=str,
                         help="Inference device",)

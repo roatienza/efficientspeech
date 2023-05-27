@@ -153,41 +153,39 @@ class EfficientSpeech(LightningModule):
         loss = (10. * mel_loss) + (2. * pitch_loss) + (2. * energy_loss) + duration_loss
         
         losses = {"loss": loss, 
-                   "mel_loss": mel_loss, 
-                   "pitch_loss": pitch_loss,
-                   "energy_loss": energy_loss, 
-                   "duration_loss": duration_loss}
+                  "mel_loss": mel_loss, 
+                  "pitch_loss": pitch_loss,
+                  "energy_loss": energy_loss, 
+                  "duration_loss": duration_loss}
         self.training_step_outputs.append(losses)
         return loss
 
 
-    #def training_epoch_end(self, outputs):
     def on_train_epoch_end(self):
         #avg_loss = torch.stack(self.training_step_outputs).mean()
         avg_loss = torch.stack([x["loss"] for x in self.training_step_outputs]).mean()
         avg_mel_loss = torch.stack([x["mel_loss"] for x in self.training_step_outputs]).mean()
-        #avg_pitch_loss = torch.stack([x["pitch_loss"] for x in self.training_step_outputs]).mean()
-        #avg_energy_loss = torch.stack(
-        #    [x["energy_loss"] for x in self.training_step_outputs]).mean()
-        #avg_duration_loss = torch.stack(
-        #    [x["duration_loss"] for x in self.training_step_outputs]).mean()
-        #self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        #self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        #self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)
-        #self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        avg_pitch_loss = torch.stack([x["pitch_loss"] for x in self.training_step_outputs]).mean()
+        avg_energy_loss = torch.stack(
+            [x["energy_loss"] for x in self.training_step_outputs]).mean()
+        avg_duration_loss = torch.stack(
+            [x["duration_loss"] for x in self.training_step_outputs]).mean()
+        self.log("mel", avg_mel_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("pitch", avg_pitch_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("energy", avg_energy_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("dur", avg_duration_loss, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log("loss", avg_loss, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log("lr", self.scheduler.get_last_lr()[0], on_epoch=True, prog_bar=True, sync_dist=True)
         self.training_step_outputs.clear()
 
 
-    #def test_step(self, batch, batch_idx):
     def validation_step(self, batch, batch_idx):
         # TODO: use predict step for wav file generation
 
-        if batch_idx==0 and self.current_epoch>1 :
+        if batch_idx==0 and self.current_epoch>=1 :
             x, y = batch
             wavs, lengths, _ = self.forward(x)
-            wavs = wavs.cpu().numpy()
+            wavs = wavs.to(torch.float).cpu().numpy()
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(), \
                 wav_path=self.wav_path, filename="prediction")
 
@@ -196,7 +194,7 @@ class EfficientSpeech(LightningModule):
             lengths = x["mel_len"]
             with torch.no_grad():
                 wavs = self.hifigan(mel).squeeze(1)
-                wavs = wavs.cpu().numpy()
+                wavs = wavs.to(torch.float).cpu().numpy()
             
             write_to_file(wavs, self.preprocess_config, lengths=lengths.cpu().numpy(),\
                     wav_path=self.wav_path, filename="reconstruction")
@@ -210,9 +208,6 @@ class EfficientSpeech(LightningModule):
             
     def on_test_epoch_end(self):
         pass
-
-    #def validation_step(self, batch, batch_idx):
-    #     return self.test_step(batch, batch_idx)
 
     def on_validation_epoch_end(self):
         pass

@@ -1,7 +1,7 @@
-torch==1.13.1
-torchvision==0.14
-pytorch-lightning===1.8.6
-torchmetrics==0.11
+torch>=2.0.1
+torchvision>=0.15.2
+lightning>=2.0.2
+torchmetrics==0.11.4
 lightning-bolts==0.6
 unidecode
 inflect
@@ -14,3 +14,10 @@ validators
 onnx
 onnxruntime
 protobuf==3.20
+# needed for data preparation
+librosa
+unidecode
+inflect
+tgt
+pyworld
+

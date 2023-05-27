@@ -432,5 +432,5 @@ class Phoneme2Mel(nn.Module):
         if train: 
             return pred
 
-        return mel, pred["mel_len"] #, pred["duration"]
+        return mel, pred["mel_len"], pred["duration"]
 
