@@ -43,7 +43,7 @@ if __name__ == "__main__":
     model.eval()
 
     if args.onnx is not None:
-        phoneme = torch.randint(low=70, high=146, size=(1,args.onnx_insize)).int()
+        phoneme = torch.randint(low=70, high=146, size=(1,args.onnx_insize)).int().to(args.infer_device)
         print("Input shape: ", phoneme.shape)
         sample_input = [{"phoneme": phoneme}, False]
         print("Converting to ONNX ...", args.onnx)
@@ -52,12 +52,13 @@ if __name__ == "__main__":
         # or use model.to_onnx
         #model.to_onnx(args.onnx, sample_input, input_names="phoneme") #, export_params=True)
         torch.onnx.export(model, sample_input, args.onnx,
-                            opset_version=args.onnx_opset, do_constant_folding=True,
-                            input_names=["inputs"], output_names=["outputs"],
-                            dynamic_axes={
-                                "inputs": {1: "phoneme"},
-                                "outputs": {1: "wav"} #ideally, this works but repeat_interleave is fixed
-                            })
+                          opset_version=args.onnx_opset, do_constant_folding=True,
+                          input_names=["inputs"], output_names=["outputs"],
+                          dynamic_axes={
+                              "inputs": {1: "phoneme"},
+                              # ideally, this works but repeat_interleave is fixed
+                              "outputs": {1: "wav"}
+                          })
     elif args.jit is not None:
         with torch.no_grad():
             print("Converting to JIT ...", args.jit)

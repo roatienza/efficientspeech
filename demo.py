@@ -53,11 +53,11 @@ def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
         
         # ideally the duration is returned by the model but was disabled during training
         # maybe in the next release
-        # duration = outputs[2]
-        # orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
+        duration = outputs[2]
+        orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
         
         # crude estimate of duration
-        orig_duration = int(lengths*phoneme_len/args.onnx_insize) * hop_len
+        # orig_duration = int(lengths*phoneme_len/args.onnx_insize) * hop_len
         # truncate the wav file to the original duration
         wavs = wavs[:, :orig_duration]
         lengths = [orig_duration]
@@ -135,6 +135,7 @@ if __name__ == "__main__":
                                            hifigan_checkpoint=args.hifigan_checkpoint,
                                            infer_device=args.infer_device,
                                            verbose=args.verbose)
+        
         model = model.to(args.infer_device)
         model.eval()
 
