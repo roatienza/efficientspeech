@@ -320,9 +320,10 @@ def get_args():
     parser.add_argument("--accelerator", type=str, default=choices[1], choices=choices)
     
     parser.add_argument("--devices", type=int, default=1)
+    parser.add_argument("--iter", type=int, default=1)
     
-    choices = ["bf16-mixed", "16-mixed", 16, 32, 64]
-    parser.add_argument("--precision", default=choices[0], choices=choices)
+    #choices = ["bf16-mixed", "16-mixed", 16, 32, 64]
+    parser.add_argument("--precision", default=16)
     
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--max_epochs", type=int, default=5000)

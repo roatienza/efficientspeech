@@ -79,7 +79,7 @@ def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
     message += f"\nNote:\tFor benchmarking, load the model 1st, do a warmup run for 100x, then run the benchmark for 1000 iterations."
-    message += f"\n\tGet the mean of 1000 runs."
+    message += f"\n\tGet the mean of 1000 runs. Use --iter N to run N iterations. eg N=100"
     write_to_file(wavs, preprocess_config, lengths=lengths, \
         wav_path=args.wav_path, filename=args.wav_filename)
     
@@ -103,7 +103,6 @@ if __name__ == "__main__":
 
 
     if "onnx" in checkpoint:
-        #model.load_from_onnx(args.checkpoint)
         import onnxruntime
         import onnx
 
@@ -118,30 +117,21 @@ if __name__ == "__main__":
                                 infer_device=args.infer_device,
                                 hifigan_checkpoint=args.hifigan_checkpoint,)
 
-        model = model.load_from_checkpoint(checkpoint, 
-                                           preprocess_config=preprocess_config,
-                                           lr=args.lr,
-                                           weight_decay=args.weight_decay,
-                                           max_epochs=args.max_epochs,
-                                           depth=args.depth, 
-                                           n_blocks=args.n_blocks, 
-                                           block_depth=args.block_depth,
-                                           reduction=args.reduction, 
-                                           head=args.head,
-                                           embed_dim=args.embed_dim, 
-                                           kernel_size=args.kernel_size,
-                                           decoder_kernel_size=args.decoder_kernel_size,
-                                           expansion=args.expansion,
-                                           hifigan_checkpoint=args.hifigan_checkpoint,
-                                           infer_device=args.infer_device,
-                                           verbose=args.verbose,
+        model = model.load_from_checkpoint(checkpoint,
                                            map_location=torch.device('cpu'))
         
         model = model.to(args.infer_device)
         model.eval()
 
     if args.text is not None:
-        tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
+        rtf = []
+        for  i in range(args.iter):
+            _, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
+            if i > 10:
+                rtf.append(rtf_i)
+        mean_rtf = np.mean(rtf)
+        # print with 2 decimal places
+        print("Average RTF: {:.2f}".format(mean_rtf))  
         exit(0)
 
     import sounddevice as sd
