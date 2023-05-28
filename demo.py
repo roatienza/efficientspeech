@@ -134,7 +134,8 @@ if __name__ == "__main__":
                                            expansion=args.expansion,
                                            hifigan_checkpoint=args.hifigan_checkpoint,
                                            infer_device=args.infer_device,
-                                           verbose=args.verbose)
+                                           verbose=args.verbose,
+                                           map_location=torch.device('cpu'))
         
         model = model.to(args.infer_device)
         model.eval()
