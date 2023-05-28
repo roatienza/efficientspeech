@@ -17,7 +17,7 @@
 
 **Install**
 
-**ES** is currently migrating to Pytorch 2.0 and Lightning 2.0. Expect unstable features. New model weights will be provided soon. 
+**ES** is currently migrating to Pytorch 2.0 and Lightning 2.0. Expect unstable features.
 
 ```
 pip install -r requirements.txt
@@ -32,7 +32,7 @@ pip uninstall nvidia_cublas_cu11
 **Tiny ES**
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/tiny_eng_266k.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/tiny_eng_266k.ckpt \
   --infer-device cpu --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
 ```
 
@@ -59,7 +59,7 @@ ffplay outputs/color.wav
 **Small ES**
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/small_eng_952k.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/small_eng_952k.ckpt \
   --infer-device cpu  --n-blocks 3 --reduction 2  \
   --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow." \
   --wav-filename color-small.wav
@@ -75,9 +75,9 @@ ffplay outputs/color-small.wav
 **Base ES**
 
 ```
-python3 demo.py --checkpoint  https://github.com/roatienza/efficientspeech/releases/download/icassp2023/base_eng_4M.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/base_eng_4M.ckpt \
   --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3 --infer-device cpu  \
-  --text " Why do bees have sticky hair?" --wav-filename  bees-base.wav
+  --text "Why do bees have sticky hair?" --wav-filename  bees-base.wav
 ```
 
 Playback:
@@ -89,7 +89,7 @@ ffplay outputs/bees-base.wav
 **GPU** for Inference
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/icassp2023/small_eng_952k.ckpt \
+python3 demo.py --checkpoint small_eng_952k.ckpt  \
   --infer-device cuda  --n-blocks 3 --reduction 2  \
   --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow."   \
   --wav-filename color-small.wav
@@ -97,11 +97,7 @@ python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releas
 
 ### RPi4 Inference
 
-`torch==1.13` generates `Illegal instruction` error on RPi4 but not on `torch==1.12`. Please downgrade the installed torch to resolve this issue.
-
-```
-pip3 install torch==1.12 torchvision==0.13
-```
+PyTorch 2.0 is slower on RPi4. Please use the [Demo Release](https://github.com/roatienza/efficientspeech/releases/tag/demo-0.1-release) and [ICASSP2023 model weights](https://github.com/roatienza/efficientspeech/releases/tag/icassp2023).
 
 ### ONNX 
 
