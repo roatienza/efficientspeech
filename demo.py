@@ -51,13 +51,12 @@ def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
         hop_len = preprocess_config["preprocessing"]["stft"]["hop_length"]
         lengths = outputs[1]
         
-        # ideally the duration is returned by the model but was disabled during training
-        # maybe in the next release
         duration = outputs[2]
         orig_duration = int(np.sum(np.round(duration.squeeze())[:phoneme_len])) * hop_len
         
         # crude estimate of duration
         # orig_duration = int(lengths*phoneme_len/args.onnx_insize) * hop_len
+        
         # truncate the wav file to the original duration
         wavs = wavs[:, :orig_duration]
         lengths = [orig_duration]
@@ -125,9 +124,10 @@ if __name__ == "__main__":
 
     if args.text is not None:
         rtf = []
+        warmup = 10
         for  i in range(args.iter):
             _, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
-            if i > 10:
+            if i > warmup:
                 rtf.append(rtf_i)
         mean_rtf = np.mean(rtf)
         # print with 2 decimal places

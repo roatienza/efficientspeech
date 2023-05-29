@@ -19,28 +19,9 @@ if __name__ == "__main__":
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader)
 
-    model = EfficientSpeech(preprocess_config=preprocess_config, infer_device=args.infer_device)
- 
-    model = model.load_from_checkpoint(args.checkpoint,
-                                       preprocess_config=preprocess_config,
-                                       lr=args.lr,
-                                       weight_decay=args.weight_decay,
-                                       max_epochs=args.max_epochs,
-                                       depth=args.depth,
-                                       n_blocks=args.n_blocks,
-                                       block_depth=args.block_depth,
-                                       reduction=args.reduction,
-                                       head=args.head,
-                                       embed_dim=args.embed_dim,
-                                       kernel_size=args.kernel_size,
-                                       decoder_kernel_size=args.decoder_kernel_size,
-                                       expansion=args.expansion,
-                                       hifigan_checkpoint=args.hifigan_checkpoint,
-                                       infer_device=args.infer_device,
-                                       verbose=args.verbose)
+    model = EfficientSpeech(preprocess_config=preprocess_config)
+    model = model.load_from_checkpoint(args.checkpoint, map_location=torch.device('cpu'))
     model = model.to(args.infer_device)
-    # not needed but here it is
-    model.eval()
 
     if args.onnx is not None:
         phoneme = torch.randint(low=70, high=146, size=(1,args.onnx_insize)).int().to(args.infer_device)
