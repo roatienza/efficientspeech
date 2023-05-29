@@ -117,6 +117,7 @@ if __name__ == "__main__":
                                 hifigan_checkpoint=args.hifigan_checkpoint,)
 
         model = model.load_from_checkpoint(checkpoint,
+                                           infer_device=args.infer_device,
                                            map_location=torch.device('cpu'))
         
 
