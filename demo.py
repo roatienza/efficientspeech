@@ -129,9 +129,10 @@ if __name__ == "__main__":
             _, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
             if i > warmup:
                 rtf.append(rtf_i)
-        mean_rtf = np.mean(rtf)
-        # print with 2 decimal places
-        print("Average RTF: {:.2f}".format(mean_rtf))  
+        if len(rtf) > 0:
+            mean_rtf = np.mean(rtf)
+            # print with 2 decimal places
+            print("Average RTF: {:.2f}".format(mean_rtf))  
         exit(0)
 
     import sounddevice as sd
