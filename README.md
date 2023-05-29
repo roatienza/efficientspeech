@@ -99,12 +99,19 @@ python3 demo.py --checkpoint small_eng_952k.ckpt  \
 
 PyTorch 2.0 is slower on RPi4. Please use the [Demo Release](https://github.com/roatienza/efficientspeech/releases/tag/demo-0.1-release) and [ICASSP2023 model weights](https://github.com/roatienza/efficientspeech/releases/tag/icassp2023).
 
+Alternative, please use the onnx version:
+
+```
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/tiny_eng_266k.onnx \
+  --infer-device cpu  --text "the primary colors are red, green, and blue."  --wav-filename primary.wav
+```
+
 ### ONNX 
 
 Only supports fixed input phoneme length. Padding or truncation is applied if needed. Modify using `--onnx-insize=<desired valu>`.
 
 ```
-python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx
+python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx --infer-device cpu
 ```
 
 Might need to downgrade `protobuf` if an error occurs.
