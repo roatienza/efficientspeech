@@ -391,16 +391,15 @@ def get_args():
                         type=str,
                         help="Output folder during training",)
 
-  
 
     parser.add_argument("--hifigan-checkpoint",
                         default="hifigan/LJ_V2/generator_v2",
                         type=str,
-                        help="hifigan checkpoint",)                      
+                        help="HiFiGAN checkpoint",)                      
 
-    parser.add_argument('--synthesize',
-                        action='store_true',
-                        help='synthesize audio using pre-trained model')
+    #parser.add_argument('--synthesize',
+    #                    action='store_true',
+    #                    help='Synthesize audio using pre-trained model')
     
     choices = ['cpu', 'cuda']
     parser.add_argument("--infer-device",
@@ -425,29 +424,29 @@ def get_args():
     parser.add_argument("--text",
                         type=str,
                         default=None,
-                        help="raw text to synthesize, for single-sentence mode only",)
+                        help="Raw text to synthesize, for single-sentence mode only",)
 
     parser.add_argument('--verbose',
                         action='store_true',
-                        help='print out debug information')
+                        help='Print out debug information')
 
     parser.add_argument('--onnx',
                         type=str,
                         default=None,
-                        help='convert to onnx model')
+                        help='Convert to onnx model')
     parser.add_argument('--onnx-insize',
                         type=int,
                         default=128,
-                        help='max input size for the onnx model')
+                        help='Max input size for the onnx model')
     parser.add_argument('--onnx-opset',
                         type=int,
                         default=14,
-                        help='opset version of onnx model (9<opset<15)')
+                        help='Opset version of onnx model (9<opset<15)')
 
     parser.add_argument('--jit',
                         type=str,
                         default=None,
-                        help='convert to jit model')
+                        help='Convert to jit model')
     # use jit modules 
     parser.add_argument('--to-torchscript',
                         action='store_true',
@@ -456,7 +455,11 @@ def get_args():
     # if benchmark is True 
     parser.add_argument('--benchmark',
                         action='store_true',
-                        help='run benchmark')
+                        help='Run benchmark')
+     
+    parser.add_argument('--compile',
+                        action='store_true',
+                        help='Train using the compiled model')
     
     args = parser.parse_args()
 

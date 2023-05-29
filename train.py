@@ -63,15 +63,16 @@ if __name__ == "__main__":
     if args.verbose:
         print_args(args)
         
-    torch.set_float32_matmul_precision('medium')
     trainer = Trainer(accelerator=args.accelerator, 
                       devices=args.devices,
                       precision=args.precision,
                       check_val_every_n_epoch=10,
                       max_epochs=args.max_epochs,)
 
-    compiled_model = torch.compile(model)
+    if args.compile:
+        model = torch.compile(model)
+    
     start_time = datetime.datetime.now()
-    trainer.fit(compiled_model, datamodule=datamodule)
+    trainer.fit(model, datamodule=datamodule)
     elapsed_time = datetime.datetime.now() - start_time
     print(f"Training time: {elapsed_time}")

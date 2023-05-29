@@ -119,16 +119,24 @@ if __name__ == "__main__":
         model = model.load_from_checkpoint(checkpoint,
                                            map_location=torch.device('cpu'))
         
+
         model = model.to(args.infer_device)
         model.eval()
+        
+        if args.compile:
+            model = torch.compile(model)
 
     if args.text is not None:
         rtf = []
         warmup = 10
         for  i in range(args.iter):
+            if args.infer_device == "cuda":
+                torch.cuda.synchronize()
             _, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
             if i > warmup:
                 rtf.append(rtf_i)
+            if args.infer_device == "cuda":
+                torch.cuda.synchronize()
         if len(rtf) > 0:
             mean_rtf = np.mean(rtf)
             # print with 2 decimal places
