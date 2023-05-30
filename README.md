@@ -88,18 +88,18 @@ ffplay outputs/bees-base.wav
 
 **GPU** for Inference 
 
-And with a long text. 
+And with a long text. On an A100, this can reach RTF > 1,300. Time it using `--iter 100` option.
 
 ```
 python3 demo.py --checkpoint small_eng_952k.ckpt  \
   --infer-device cuda  --n-blocks 3 --reduction 2  \
   --text "Once upon a time, in a magical forest filled with colorful flowers and sparkling streams, there lived a group of adorable kittens. Their names were Fluffy, Sparkle, and Whiskers. With their soft fur and twinkling eyes, they charmed everyone they met. Every day, they would play together, chasing their tails and pouncing on sunbeams that danced through the trees. Their purrs filled the forest with joy, and all the woodland creatures couldn't help but smile whenever they saw the cute trio. The animals knew that these kittens were truly the epitome of cuteness, bringing happiness wherever they went."   \
-  --wav-filename cats.wav
+  --wav-filename cats.wav --iter 100
 ```
 
 ### Compile and Number of Threads Options
 
-Compiled option is supported using `--compile` during training or inference. For training, the eager mode is faster. The tiny version training is ~17hrs on an A100. For inference, the compiled version is faster. 
+Compiled option is supported using `--compile` during training or inference. For training, the eager mode is faster. The tiny version training is ~17hrs on an A100. For inference, the compiled version is faster. For an unknown reason, the compile option is generating errors when `--infer-device cuda`.
 
 By default, PyTorch 2.0 uses 128 cpu threads (AMD, 4 in RPi4) which causes slowdown during inference. During inference, it is recommended to set it to a lower number. For example: `--threads 24`.
 
