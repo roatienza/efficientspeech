@@ -32,7 +32,7 @@ pip uninstall nvidia_cublas_cu11
 **Tiny ES**
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/tiny_eng_266k.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0.1/tiny_eng_266k.ckpt \
   --infer-device cpu --text "the quick brown fox jumps over the lazy dog" --wav-filename fox.wav
 ```
 
@@ -59,10 +59,10 @@ ffplay outputs/color.wav
 **Small ES**
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/small_eng_952k.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0.1/small_eng_952k.ckpt \
   --infer-device cpu  --n-blocks 3 --reduction 2  \
-  --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow." \
-  --wav-filename color-small.wav
+  --text "Bees are essential pollinators responsible for fertilizing plants and facilitating the growth of fruits, vegetables, and flowers. Their sophisticated social structures and intricate communication systems make them fascinating and invaluable contributors to ecosystems worldwide." \
+  --wav-filename bees.wav
 ```
 
 Playback:
@@ -75,7 +75,7 @@ ffplay outputs/color-small.wav
 **Base ES**
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/base_eng_4M.ckpt \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0.1/base_eng_4M.ckpt \
   --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3 --infer-device cpu  \
   --text "Why do bees have sticky hair?" --wav-filename  bees-base.wav
 ```
@@ -86,50 +86,47 @@ Playback:
 ffplay outputs/bees-base.wav
 ```
 
-**GPU** for Inference
+**GPU** for Inference 
+
+And with a long text. 
 
 ```
 python3 demo.py --checkpoint small_eng_952k.ckpt  \
   --infer-device cuda  --n-blocks 3 --reduction 2  \
-  --text "In subtractive color mixing, which is used for printing and painting, the primary colors are cyan, magenta, and yellow."   \
-  --wav-filename color-small.wav
+  --text "Once upon a time, in a magical forest filled with colorful flowers and sparkling streams, there lived a group of adorable kittens. Their names were Fluffy, Sparkle, and Whiskers. With their soft fur and twinkling eyes, they charmed everyone they met. Every day, they would play together, chasing their tails and pouncing on sunbeams that danced through the trees. Their purrs filled the forest with joy, and all the woodland creatures couldn't help but smile whenever they saw the cute trio. The animals knew that these kittens were truly the epitome of cuteness, bringing happiness wherever they went."   \
+  --wav-filename cats.wav
 ```
+
+### Compile and Number of Threads Options
+
+Compiled option is supported using `--compile` during training or inference. For training, the eager mode is faster. The tiny version training is ~17hrs on an A100. For inference, the compiled version is faster. 
+
+By default, PyTorch 2.0 uses 128 cpu threads (AMD, 4 in RPi4) which causes slowdown during inference. During inference, it is recommended to set it to a lower number. For example: `--threads 24`.
 
 ### RPi4 Inference
 
 PyTorch 2.0 is slower on RPi4. Please use the [Demo Release](https://github.com/roatienza/efficientspeech/releases/tag/demo-0.1-release) and [ICASSP2023 model weights](https://github.com/roatienza/efficientspeech/releases/tag/icassp2023).
 
-Alternative, please use the onnx version:
+RTF on PyTorch 2.0 is ~1.0. RTF on PyTorch 1.12 is ~1.7. 
+
+Alternatively, please use the onnx version:
 
 ```
-python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0/tiny_eng_266k.onnx \
+python3 demo.py --checkpoint https://github.com/roatienza/efficientspeech/releases/download/pytorch2.0.1/tiny_eng_266k.onnx \
   --infer-device cpu  --text "the primary colors are red, green, and blue."  --wav-filename primary.wav
 ```
 
 ### ONNX 
 
-Only supports fixed input phoneme length. Padding or truncation is applied if needed. Modify using `--onnx-insize=<desired valu>`.
+Only supports fixed input phoneme length. Padding or truncation is applied if needed. Modify using `--onnx-insize=<desired valu>`. Default max phoneme length is 128. For example:
 
 ```
-python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx --infer-device cpu
-```
-
-Might need to downgrade `protobuf` if an error occurs.
-
-```
-pip install protobuf==3.20
-```
-
-Usage:
-
-```
-python3 demo.py --checkpoint tiny_eng_266k.onnx --infer-device cpu  \
-  --text "the primary colors are red, green, and blue."  --wav-filename primary.wav
+python3 convert.py --checkpoint tiny_eng_266k.ckpt --onnx tiny_eng_266k.onnx --onnx-insize 256
 ```
 
 ### Dataset Preparation
 
-Choose a dataset folder: eg `<data_folder> = /data/tts` - directory where dataset will be stored
+Choose a dataset folder: eg `<data_folder> = /data/tts` - directory where dataset will be stored.
 
 Download LJSpeech:
 
@@ -157,7 +154,7 @@ path:
 >>>>>>>>>>>>>>>>
 ```
 
-Replace `/data/tts` with your `<data_folder>`
+Replace `/data/tts` with your `<data_folder>`.
 
 Download alignment data to `preprocessed_data/LJSpeech/TextGrid` from [here](https://drive.google.com/drive/folders/1DBRkALpPd6FL9gjHMmMEdHODmkgNIIK4?usp=sharing).
 
@@ -176,12 +173,12 @@ For more info: [FastSpeech2](https://github.com/ming024/FastSpeech2) implementat
 **Tiny ES**
 
 By default:
-  - `--precision=bf16-mixed`. If your GPU does not support `bfloat16`, change this option to one of these: `"bf16-mixed", "16-mixed", 16, 32, 64`.
+  - `--precision=16`. Other options: `"bf16-mixed", "16-mixed", 16, 32, 64`.
   - `--accelerator=gpu`
   - `--infer-device=cuda`
   - `--devices=1`
   - See more options in `utils/tools.py`
-
+  
 ```
 python3 train.py
 ```
@@ -195,8 +192,7 @@ python3 train.py --n-blocks 3 --reduction 2
 **Base ES**
 
 ```
-python3 train.py --head 2 --reduction 1 --expansion 2 \
-  --kernel-size 5 --n-blocks 3 --block-depth 3
+python3 train.py --head 2 --reduction 1 --expansion 2 --kernel-size 5 --n-blocks 3 --block-depth 3
 ```
 
 ## Comparison with other SOTA Neural TTS
@@ -205,7 +201,7 @@ python3 train.py --head 2 --reduction 1 --expansion 2 \
 
 ## Credits
 
-- [FastSpeech2 Unofficial Github](https://github.com/ming024/FastSpeech2)
+- [FastSpeech2 Unofficial Github](https://github.com/ming024/FastSpeech2).
 
 
 ## Citation
