@@ -124,8 +124,14 @@ if __name__ == "__main__":
         model = model.to(args.infer_device)
         model.eval()
         
+        # default number of threads is 128 on AMD
+        # this is too high and causes the model to run slower
+        # set it to a lower number eg --threads 24 
+        # https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html
+        if args.threads is not None:
+            torch.set_num_threads(args.threads)
         if args.compile:
-            model = torch.compile(model)
+            model = torch.compile(model, mode="reduce-overhead", backend="inductor")
 
     if args.text is not None:
         rtf = []

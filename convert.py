@@ -38,7 +38,7 @@ if __name__ == "__main__":
                           dynamic_axes={
                               "inputs": {1: "phoneme"},
                               # ideally, this works but repeat_interleave is fixed
-                              "outputs": {1: "wav"}
+                              "outputs": {0: "wav", 1: "lengths", 2: "duration"}
                           })
     elif args.jit is not None:
         with torch.no_grad():

@@ -12,7 +12,8 @@ g2p-en
 validators
 onnx
 onnxruntime
-protobuf==3.20
+protobuf==3.20.2
+numpy==1.24.3
 # needed for data preparation
 librosa
 unidecode

@@ -321,6 +321,7 @@ def get_args():
     
     parser.add_argument("--devices", type=int, default=1)
     parser.add_argument("--iter", type=int, default=1)
+    parser.add_argument("--threads", type=int, default=24)
     
     #choices = ["bf16-mixed", "16-mixed", 16, 32, 64]
     parser.add_argument("--precision", default=16)
@@ -436,7 +437,7 @@ def get_args():
                         help='Convert to onnx model')
     parser.add_argument('--onnx-insize',
                         type=int,
-                        default=128,
+                        default=None,
                         help='Max input size for the onnx model')
     parser.add_argument('--onnx-opset',
                         type=int,
