@@ -13,7 +13,7 @@ validators
 onnx
 onnxruntime
 protobuf==3.20.2
-numpy==1.24.3
+numpy==1.23.5
 # needed for data preparation
 librosa
 unidecode
