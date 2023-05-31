@@ -20,4 +20,7 @@ unidecode
 inflect
 tgt
 pyworld
+# for audio playback
+sounddevice
+portaudio19-dev
 

@@ -461,6 +461,9 @@ def get_args():
     parser.add_argument('--compile',
                         action='store_true',
                         help='Train using the compiled model')
+    parser.add_argument('--play',
+                        action='store_true',
+                        help='Playback the generated audio. Do not save it to disk.')
     
     args = parser.parse_args()
 

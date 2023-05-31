@@ -23,6 +23,7 @@ import time
 import numpy as np
 import validators
 
+
 from model import EfficientSpeech
 from utils.tools import get_args, write_to_file
 from synthesize import get_lexicon_and_g2p, text2phoneme
@@ -73,14 +74,16 @@ def tts(lexicon, g2p, preprocess_config, model, is_onnx, args, verbose=False):
     wav = np.reshape(wavs, (-1, 1))
 
     message = f"Synthesis time: {elapsed_time:.2f} sec"
+    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     wav_len = wav.shape[0] / sampling_rate
     message += f"\nVoice length: {wav_len:.2f} sec"
     real_time_factor = wav_len / elapsed_time
     message += f"\nReal time factor: {real_time_factor:.2f}"
     message += f"\nNote:\tFor benchmarking, load the model 1st, do a warmup run for 100x, then run the benchmark for 1000 iterations."
     message += f"\n\tGet the mean of 1000 runs. Use --iter N to run N iterations. eg N=100"
-    write_to_file(wavs, preprocess_config, lengths=lengths, \
-        wav_path=args.wav_path, filename=args.wav_filename)
+    if not args.play:
+        write_to_file(wavs, preprocess_config, lengths=lengths, \
+            wav_path=args.wav_path, filename=args.wav_filename)
     
     print(message)
     return wav, message, phoneme, wav_len, real_time_factor
@@ -132,6 +135,15 @@ if __name__ == "__main__":
             torch.set_num_threads(args.threads)
         if args.compile:
             model = torch.compile(model, mode="reduce-overhead", backend="inductor")
+            
+    if args.play:
+        import sounddevice as sd
+        sd.default.reset()
+        sd.default.samplerate = sampling_rate
+        sd.default.channels = 1
+        sd.default.dtype = 'int16'
+        sd.default.device = None
+        sd.default.latency = 'low'
 
     if args.text is not None:
         rtf = []
@@ -139,75 +151,20 @@ if __name__ == "__main__":
         for  i in range(args.iter):
             if args.infer_device == "cuda":
                 torch.cuda.synchronize()
-            _, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
+            wav, _, _, _, rtf_i = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
             if i > warmup:
                 rtf.append(rtf_i)
             if args.infer_device == "cuda":
                 torch.cuda.synchronize()
+            
+            if args.play:
+                sd.play(wav)
+                sd.wait()
+
         if len(rtf) > 0:
             mean_rtf = np.mean(rtf)
             # print with 2 decimal places
             print("Average RTF: {:.2f}".format(mean_rtf))  
-        exit(0)
-
-    import sounddevice as sd
-    import PySimpleGUI as sg
-    SIZE_X = 320
-    SIZE_Y = 120
-
-    sg.theme('DarkGrey13')
-    graph = sg.Graph(canvas_size=(SIZE_X*2, SIZE_Y*2),
-                     graph_bottom_left=(-(SIZE_X+5), -(SIZE_Y+5)),
-                     graph_top_right=(SIZE_X+5, SIZE_Y+5),
-                     background_color='black',
-                     expand_x=False,
-                     key='-GRAPH-')
-    multiline = sg.Multiline(#size=(100,4),
-                             expand_y=True,
-                             expand_x=True,
-                             background_color='black',
-                             write_only=False,
-                             pad=(10, 10),
-                             no_scrollbar=True,
-                             justification='left',
-                             autoscroll=True,
-                             font=("Helvetica", 36),
-                             key='-OUTPUT-',)
-    time_text = sg.Text("Voice", pad=(20, 20), font=("Helvetica", 20), key='-TIME-')
-    play_button = sg.Button('Play', key='-PLAY-', font=("Helvetica", 20))
-    clear_button = sg.Button('Clear', key='-CLEAR-', font=("Helvetica", 20))
-    quit_button = sg.Button('Quit', key='-QUIT-', font=("Helvetica", 20))
-    layout = [ [multiline], [graph, time_text], [play_button, clear_button, quit_button] ]
-    #layout = [[sg.Sizer(0,500), sg.Column([[sg.Sizer(500,0)]] + layout, element_justification='c', pad=(0,0))]]
-    g_window = sg.Window('Voice', layout, location=(0, 0), default_button_element_size=(2,1),
-                         resizable=True).Finalize()
-    g_window.Maximize()
-    g_window.BringToFront()
-    g_window.Refresh()
+    else:
+        print("Nothing to synthesize. Please provide a text file with --text")
     
-    sd.default.reset()
-    sd.default.samplerate = sampling_rate
-    sd.default.channels = 1
-    sd.default.dtype = 'int16'
-    sd.default.device = None
-    sd.default.latency = 'low'
-
-    while True:
-        event, values = g_window.read()
-        if event == sg.WIN_CLOSED or event == '-QUIT-':
-            break
-        elif event == '-PLAY-':
-            current_frame = 0
-            args.text = multiline.get()
-            wav, message, _, _, _ = tts(lexicon, g2p, preprocess_config, model, is_onnx, args)
-
-            g_window['-TIME-'].update(message)
-            g_window.refresh()
-
-            sd.play(wav)
-            sd.wait()
-
-        elif event == '-CLEAR-':
-            multiline.update('')
-
-    g_window.close()
