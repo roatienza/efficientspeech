@@ -115,13 +115,9 @@ if __name__ == "__main__":
         model = ort_session
         is_onnx = True
     else:
-        model = EfficientSpeech(preprocess_config=preprocess_config, 
-                                infer_device=args.infer_device,
-                                hifigan_checkpoint=args.hifigan_checkpoint,)
-
-        model = model.load_from_checkpoint(checkpoint,
-                                           infer_device=args.infer_device,
-                                           map_location=torch.device('cpu'))
+        model = EfficientSpeech.load_from_checkpoint(checkpoint,
+                                                     infer_device=args.infer_device,
+                                                     map_location=torch.device('cpu'))
         
 
         model = model.to(args.infer_device)
